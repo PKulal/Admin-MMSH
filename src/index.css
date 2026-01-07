@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 0 0% 0%;        /* #000000 */
+    --color-bg: 0 0% 98%;             /* #FAFAFA */
+    --color-card: 0 0% 100%;          /* #FFFFFF */
+    --color-text-main: 0 0% 9%;       /* #171717 */
+    --color-text-muted: 0 0% 40%;     /* #666666 */
+    --color-border: 0 0% 90%;         /* #E5E5E5 */
+
+    --status-success: 142 76% 36%;    /* Completed */
+    --status-warning: 24 90% 55%;     /* Submitted */
+    --status-running: 217 91% 60%;    /* Running */
+  }
+
+  body {
+    background-color: hsl(var(--color-bg));
+    color: hsl(var(--color-text-main));
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+  }
+  
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    border-right: 1px solid rgba(255, 255, 255, 0.4);
+  }
+}
