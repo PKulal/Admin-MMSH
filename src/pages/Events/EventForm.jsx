@@ -4,8 +4,9 @@ import { Card, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { ArrowLeft, Save, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Calendar, MapPin, CheckSquare, Square } from 'lucide-react';
 import { mockEvents, LOCATION_OPTIONS } from '../../data/mockEvents';
+import { mockScreens } from '../../data/mockData';
 
 const COLORS = [
     { value: '#9333ea', label: 'Purple' },
@@ -24,15 +25,24 @@ export function EventForm() {
     const isEdit = id && id !== 'new';
     const existingEvent = isEdit ? mockEvents.find(e => e.id === id) : null;
 
-    const [formData, setFormData] = useState(existingEvent || {
+    const [formData, setFormData] = useState({
         name: '',
         startDate: '',
         endDate: '',
+        scopeMode: 'location', // 'location' or 'screens'
         location: 'All',
-        peakClassification: 'peak',
+        eventPricePercentage: 0,
+        governorate: '',
+        selectedScreens: [],
         description: '',
-        color: '#9333ea'
+        color: '#9333ea',
+        ...existingEvent
     });
+
+    const uniqueGovernorates = [...new Set(mockScreens.map(s => s.governorate).filter(Boolean))].sort();
+    const filteredScreens = formData.governorate
+        ? mockScreens.filter(s => s.governorate === formData.governorate)
+        : [];
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -128,42 +138,156 @@ export function EventForm() {
                                     </p>
                                 )}
 
-                                <div>
-                                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
-                                        Location Scope *
+                                <div className="pt-4 border-t border-[hsl(var(--color-border))]">
+                                    <label className="block text-sm font-medium mb-3 text-[hsl(var(--color-text-main))] text-center">
+                                        Implementation Scope *
                                     </label>
-                                    <Select
-                                        required
-                                        value={formData.location}
-                                        onChange={(e) => updateField('location', e.target.value)}
-                                    >
-                                        {LOCATION_OPTIONS.map(loc => (
-                                            <option key={loc} value={loc}>{loc}</option>
-                                        ))}
-                                    </Select>
-                                    <p className="text-sm text-[hsl(var(--color-text-muted))] mt-1">
-                                        {formData.location === 'All'
-                                            ? 'Event applies to all locations'
-                                            : `Event applies only to ${formData.location}`}
-                                    </p>
+                                    <div className="grid grid-cols-2 gap-4 p-1 bg-[hsl(var(--color-background-muted))] rounded-lg mb-6">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                updateField('scopeMode', 'location');
+                                                updateField('governorate', '');
+                                                updateField('selectedScreens', []);
+                                            }}
+                                            className={`py-2 px-4 rounded-md text-sm font-bold transition-all ${formData.scopeMode === 'location'
+                                                ? 'bg-white shadow-sm text-[hsl(var(--color-primary))]'
+                                                : 'text-[hsl(var(--color-text-muted))] hover:text-[hsl(var(--color-text-main))]'
+                                                }`}
+                                        >
+                                            Broad Location
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                updateField('scopeMode', 'screens');
+                                                updateField('location', 'All');
+                                            }}
+                                            className={`py-2 px-4 rounded-md text-sm font-bold transition-all ${formData.scopeMode === 'screens'
+                                                ? 'bg-white shadow-sm text-[hsl(var(--color-primary))]'
+                                                : 'text-[hsl(var(--color-text-muted))] hover:text-[hsl(var(--color-text-main))]'
+                                                }`}
+                                        >
+                                            Specific Screens
+                                        </button>
+                                    </div>
+
+                                    {formData.scopeMode === 'location' ? (
+                                        <div className="space-y-1">
+                                            <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
+                                                Location Scope *
+                                            </label>
+                                            <Select
+                                                required
+                                                value={formData.location}
+                                                onChange={(e) => updateField('location', e.target.value)}
+                                            >
+                                                {LOCATION_OPTIONS.map(loc => (
+                                                    <option key={loc} value={loc}>{loc}</option>
+                                                ))}
+                                            </Select>
+                                            <p className="text-sm text-[hsl(var(--color-text-muted))] mt-1">
+                                                {formData.location === 'All'
+                                                    ? 'Event applies to all locations'
+                                                    : `Event applies only to ${formData.location}`}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <h3 className="text-sm font-bold mb-2 flex items-center gap-2">
+                                                <MapPin size={16} className="text-[hsl(var(--color-primary))]" />
+                                                Geographical Implementation
+                                            </h3>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
+                                                    Select Governorate *
+                                                </label>
+                                                <Select
+                                                    value={formData.governorate}
+                                                    onChange={(e) => {
+                                                        updateField('governorate', e.target.value);
+                                                        updateField('selectedScreens', []); // Reset selections
+                                                    }}
+                                                >
+                                                    <option value="">Choose a governorate</option>
+                                                    {uniqueGovernorates.map(gov => (
+                                                        <option key={gov} value={gov}>{gov}</option>
+                                                    ))}
+                                                </Select>
+                                            </div>
+
+                                            {formData.governorate && (
+                                                <div className="bg-[hsl(var(--color-background-muted))] p-4 rounded-lg space-y-3 border border-[hsl(var(--color-border))]">
+                                                    <div className="flex items-center justify-between border-b border-[hsl(var(--color-border))] pb-2 mb-2">
+                                                        <label className="text-sm font-bold">Select Screens</label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const allIds = filteredScreens.map(s => s.id);
+                                                                const isAllSelected = allIds.length > 0 && allIds.every(id => formData.selectedScreens.includes(id));
+                                                                updateField('selectedScreens', isAllSelected ? [] : allIds);
+                                                            }}
+                                                            className="text-xs font-bold text-[hsl(var(--color-primary))] hover:shadow-sm px-2 py-1 rounded bg-white border border-[hsl(var(--color-border))]"
+                                                        >
+                                                            {filteredScreens.every(s => formData.selectedScreens.includes(s.id)) ? 'Deselect All' : 'Select All'}
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2">
+                                                        {filteredScreens.map(screen => {
+                                                            const isSelected = formData.selectedScreens.includes(screen.id);
+                                                            return (
+                                                                <div
+                                                                    key={screen.id}
+                                                                    onClick={() => {
+                                                                        const next = isSelected
+                                                                            ? formData.selectedScreens.filter(id => id !== screen.id)
+                                                                            : [...formData.selectedScreens, screen.id];
+                                                                        updateField('selectedScreens', next);
+                                                                    }}
+                                                                    className={`flex items-center gap-3 p-2 rounded-md transition-all cursor-pointer border ${isSelected
+                                                                        ? 'bg-white border-[hsl(var(--color-primary))] shadow-sm'
+                                                                        : 'hover:bg-black/5 border-transparent'
+                                                                        }`}
+                                                                >
+                                                                    {isSelected ? (
+                                                                        <CheckSquare size={16} className="text-[hsl(var(--color-primary))]" />
+                                                                    ) : (
+                                                                        <Square size={16} className="text-[hsl(var(--color-text-muted))]" />
+                                                                    )}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-sm font-medium truncate">{screen.name}</p>
+                                                                        <p className="text-[10px] text-[hsl(var(--color-text-muted))] truncate">{screen.location}</p>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <p className="text-xs text-[hsl(var(--color-text-muted))] italic">
+                                                        {formData.selectedScreens.length} screen(s) selected
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div>
+                                <div className="pt-4 border-t border-[hsl(var(--color-border))]">
                                     <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
-                                        Peak Classification *
+                                        Event Price Factor (%) *
                                     </label>
-                                    <Select
-                                        required
-                                        value={formData.peakClassification}
-                                        onChange={(e) => updateField('peakClassification', e.target.value)}
-                                    >
-                                        <option value="peak">Peak</option>
-                                        <option value="off-peak">Off-Peak</option>
-                                    </Select>
+                                    <div className="relative">
+                                        <Input
+                                            required
+                                            type="number"
+                                            value={formData.eventPricePercentage}
+                                            onChange={(e) => updateField('eventPricePercentage', parseFloat(e.target.value))}
+                                            placeholder="e.g., 20"
+                                            className="pr-8"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[hsl(var(--color-text-muted))]">%</span>
+                                    </div>
                                     <p className="text-sm text-[hsl(var(--color-text-muted))] mt-1">
-                                        {formData.peakClassification === 'peak'
-                                            ? 'Indicates high-demand period with increased activity'
-                                            : 'Indicates lower-demand period with reduced activity'}
+                                        Percentage to increase or decrease pricing during this event.
                                     </p>
                                 </div>
 
@@ -191,8 +315,8 @@ export function EventForm() {
                                                 type="button"
                                                 onClick={() => updateField('color', color.value)}
                                                 className={`p-3 rounded-lg border-2 transition-all ${formData.color === color.value
-                                                        ? 'border-[hsl(var(--color-primary))] scale-105'
-                                                        : 'border-[hsl(var(--color-border))] hover:border-[hsl(var(--color-primary))]'
+                                                    ? 'border-[hsl(var(--color-primary))] scale-105'
+                                                    : 'border-[hsl(var(--color-border))] hover:border-[hsl(var(--color-primary))]'
                                                     }`}
                                             >
                                                 <div
@@ -229,7 +353,11 @@ export function EventForm() {
                                             : 'Date range not set'}
                                     </p>
                                     <p className="text-sm text-[hsl(var(--color-text-muted))] mt-1">
-                                        {formData.location} • {formData.peakClassification === 'peak' ? 'Peak' : 'Off-Peak'}
+                                        {formData.scopeMode === 'location' ? (
+                                            `${formData.location} Scope`
+                                        ) : (
+                                            `${formData.governorate || 'No Governorate'} • ${formData.selectedScreens.length} screens`
+                                        )}
                                     </p>
                                 </div>
                                 <p className="text-xs text-[hsl(var(--color-text-muted))]">

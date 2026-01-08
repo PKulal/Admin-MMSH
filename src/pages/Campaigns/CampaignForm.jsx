@@ -25,7 +25,10 @@ import {
     FileText,
     Trash2,
     Upload,
-    X
+    X,
+    Sun,
+    Moon,
+    Zap
 } from 'lucide-react';
 import { mockCampaigns, mockTenants, mockScreens } from '../../data/mockData';
 import { mockPricing } from '../../data/mockPricing';
@@ -43,6 +46,9 @@ const HOURLY_SEGMENTS = Array.from({ length: 24 }, (_, i) => {
     const hour = i.toString().padStart(2, '0');
     return `${hour}:00`;
 });
+
+const PEAK_HOURS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
+const NON_PEAK_HOURS = HOURLY_SEGMENTS.filter(h => !PEAK_HOURS.includes(h));
 
 export function CampaignForm() {
     const { id } = useParams();
@@ -69,7 +75,10 @@ export function CampaignForm() {
         tenantId: existingCampaign?.tenantId || '',
         startDate: existingCampaign?.startDate || '',
         endDate: existingCampaign?.endDate || '',
-        screens: existingCampaign?.screens || [],
+        screens: existingCampaign?.screens?.map(s => ({
+            ...s,
+            bookedQuantity: s.bookedQuantity || 1
+        })) || [],
         // screenId -> array of hours (e.g. ["08:00", "09:00"])
         hourlySegments: existingCampaign?.slots?.reduce((acc, slot) => {
             if (!acc[slot.screenId]) acc[slot.screenId] = [];
@@ -107,9 +116,19 @@ export function CampaignForm() {
                 delete newSegments[screen.id];
                 return { ...prev, screens: newScreens, hourlySegments: newSegments };
             } else {
-                return { ...prev, screens: [...prev.screens, screen] };
+                return {
+                    ...prev,
+                    screens: [...prev.screens, { ...screen, bookedQuantity: 1 }]
+                };
             }
         });
+    };
+
+    const updateScreenQuantity = (screenId, quantity) => {
+        setFormData(prev => ({
+            ...prev,
+            screens: prev.screens.map(s => s.id === screenId ? { ...s, bookedQuantity: quantity } : s)
+        }));
     };
 
     const toggleSegment = (screenId, segment) => {
@@ -132,6 +151,46 @@ export function CampaignForm() {
                 }
             };
         });
+    };
+
+    const toggleAllSegments = (screenId) => {
+        setFormData(prev => ({
+            ...prev,
+            hourlySegments: {
+                ...prev.hourlySegments,
+                [screenId]: [...HOURLY_SEGMENTS]
+            }
+        }));
+    };
+
+    const togglePeakSegments = (screenId) => {
+        setFormData(prev => ({
+            ...prev,
+            hourlySegments: {
+                ...prev.hourlySegments,
+                [screenId]: [...PEAK_HOURS]
+            }
+        }));
+    };
+
+    const toggleNonPeakSegments = (screenId) => {
+        setFormData(prev => ({
+            ...prev,
+            hourlySegments: {
+                ...prev.hourlySegments,
+                [screenId]: [...NON_PEAK_HOURS]
+            }
+        }));
+    };
+
+    const clearSegments = (screenId) => {
+        setFormData(prev => ({
+            ...prev,
+            hourlySegments: {
+                ...prev.hourlySegments,
+                [screenId]: []
+            }
+        }));
     };
 
     const handleRemoveMedia = (id) => {
@@ -195,7 +254,11 @@ export function CampaignForm() {
                 if (!segment || typeof segment !== 'string') return;
                 const pricingRule = mockPricing.find(p => p.screenId === screenId && p.slotTime?.startsWith(segment.split(':')[0]));
                 const pricePerHour = pricingRule?.pricePerDay ? pricingRule.pricePerDay / 4 : 50; // Mock calculation
-                total += pricePerHour * diffDays;
+
+                const selectedScreen = formData.screens.find(s => s.id === screenId);
+                const qty = selectedScreen?.bookedQuantity || 1;
+
+                total += pricePerHour * diffDays * qty;
             });
         });
         return total;
@@ -359,7 +422,7 @@ export function CampaignForm() {
                                 <option value="Non Arab">Non Arab 30%-60%</option>
                                 <option value="Non Arab">Non Arab 60%-100%</option>
                             </Select>
-                            
+
                         </div>
 
                         {/* Screen Cards Grid */}
@@ -414,6 +477,44 @@ export function CampaignForm() {
                                                     </Button>
                                                 </div>
                                             </div>
+
+                                            {isSelected && (
+                                                <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-[10px] text-gray-400 uppercase">Booked Quantity</p>
+                                                        <p className="text-xs text-blue-600 font-medium">{screen.screenQuantity} available</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 w-7 p-0 rounded-full"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const currentQty = formData.screens.find(s => s.id === screen.id)?.bookedQuantity || 1;
+                                                                if (currentQty > 1) updateScreenQuantity(screen.id, currentQty - 1);
+                                                            }}
+                                                        >
+                                                            -
+                                                        </Button>
+                                                        <span className="font-bold text-sm w-4 text-center">
+                                                            {formData.screens.find(s => s.id === screen.id)?.bookedQuantity || 1}
+                                                        </span>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 w-7 p-0 rounded-full"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const currentQty = formData.screens.find(s => s.id === screen.id)?.bookedQuantity || 1;
+                                                                if (currentQty < screen.screenQuantity) updateScreenQuantity(screen.id, currentQty + 1);
+                                                            }}
+                                                        >
+                                                            +
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </Card>
                                 );
@@ -467,22 +568,67 @@ export function CampaignForm() {
                                         </div>
                                     )}
 
-                                    <div className="p-6 bg-gray-50/50 border border-gray-100 rounded-xl space-y-6">
-                                        <div>
-                                            <h4 className="font-bold">Select Hourly Segments</h4>
-                                            <p className="text-xs text-gray-500">Choose the hours you want your ad to run. Each segment allows one 10s ad every 180s.</p>
+                                    <div className="p-8 bg-white border border-gray-100 rounded-3xl shadow-sm space-y-8">
+                                        <div className="space-y-1">
+                                            <h4 className="text-xl font-bold text-gray-900">Select Hourly Segments</h4>
+                                            <p className="text-sm text-gray-500">Choose the hours you want your ad to run. Each segment allows one 10s ad every 180s.</p>
                                         </div>
 
-                                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                                        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={selectedSegments.length > 0}
+                                                className="h-9 px-3 border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
+                                                onClick={() => togglePeakSegments(currentScreen.id)}
+                                            >
+                                                <Sun size={14} className="text-gray-500" />
+                                                Select all peak hours
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={selectedSegments.length > 0}
+                                                className="h-9 px-3 border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
+                                                onClick={() => toggleNonPeakSegments(currentScreen.id)}
+                                            >
+                                                <Moon size={14} className="text-gray-500" />
+                                                Select non-peak hours
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={selectedSegments.length > 0}
+                                                className="h-9 px-3 border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
+                                                onClick={() => toggleAllSegments(currentScreen.id)}
+                                            >
+                                                <Zap size={14} className="text-gray-500" />
+                                                Select all
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-9 px-4 border-gray-300 text-xs font-bold rounded-lg hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
+                                                onClick={() => clearSegments(currentScreen.id)}
+                                            >
+                                                Clear all
+                                            </Button>
+                                        </div>
+
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                                             {HOURLY_SEGMENTS.map(segment => {
                                                 const isSelected = selectedSegments.includes(segment);
                                                 return (
                                                     <Button
                                                         key={segment}
                                                         variant="outline"
-                                                        className={`h-11 font-medium text-xs transition-all border-gray-200 ${isSelected
-                                                            ? 'bg-black text-white border-black hover:bg-gray-800'
-                                                            : 'bg-white hover:border-gray-400'
+                                                        className={`h-10 text-xs font-bold rounded-lg transition-all border-gray-200 ${isSelected
+                                                            ? 'border-black bg-white shadow-sm ring-1 ring-black'
+                                                            : 'bg-white hover:border-gray-400 opacity-80'
                                                             }`}
                                                         onClick={() => toggleSegment(currentScreen.id, segment)}
                                                     >
@@ -527,6 +673,7 @@ export function CampaignForm() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Screen / Time Segments</TableHead>
+                                        <TableHead className="text-right">Quantity</TableHead>
                                         <TableHead className="text-right">Price per Hour</TableHead>
                                         <TableHead className="text-right">Total Price</TableHead>
                                     </TableRow>
@@ -538,7 +685,9 @@ export function CampaignForm() {
                                         const start = new Date(formData.startDate);
                                         const end = new Date(formData.endDate);
                                         const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
-                                        const totalPrice = segments.length * 50 * diffDays;
+                                        const selectedScreen = formData.screens.find(s => s.id === screenId);
+                                        const qty = selectedScreen?.bookedQuantity || 1;
+                                        const totalPrice = segments.length * 50 * diffDays * qty;
 
                                         return (
                                             <TableRow key={screenId}>
@@ -546,6 +695,7 @@ export function CampaignForm() {
                                                     <p className="font-medium">{screen?.name}</p>
                                                     <p className="text-xs text-[hsl(var(--color-text-muted))]">{segments.length} segments selected</p>
                                                 </TableCell>
+                                                <TableCell className="text-right font-medium">{qty}</TableCell>
                                                 <TableCell className="text-right">50 KWD</TableCell>
                                                 <TableCell className="text-right font-semibold">
                                                     {formatCurrency(totalPrice)}
@@ -732,7 +882,12 @@ export function CampaignForm() {
                                         {formData.screens.map(screen => (
                                             <div key={screen.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                                                 <div>
-                                                    <p className="font-medium text-sm">{screen.name}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-medium text-sm">{screen.name}</p>
+                                                        <Badge variant="secondary" className="text-[10px] bg-blue-50 text-blue-600 border-blue-100">
+                                                            Qty: {screen.bookedQuantity}
+                                                        </Badge>
+                                                    </div>
                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                         {formData.hourlySegments[screen.id]?.map(segment => (
                                                             <Badge key={segment} variant="outline" className="text-[9px] bg-white">

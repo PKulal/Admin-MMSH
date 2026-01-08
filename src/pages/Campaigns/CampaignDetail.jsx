@@ -143,6 +143,13 @@ export function CampaignDetail() {
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
+                                    <Monitor size={20} className="text-[hsl(var(--color-text-muted))] mt-0.5" />
+                                    <div>
+                                        <p className="text-sm text-[hsl(var(--color-text-muted))]">Screens Selected</p>
+                                        <p className="font-semibold">{campaign.screens.length}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
                                     <Calendar size={20} className="text-[hsl(var(--color-text-muted))] mt-0.5" />
                                     <div>
                                         <p className="text-sm text-[hsl(var(--color-text-muted))]">Date Range</p>
@@ -168,12 +175,17 @@ export function CampaignDetail() {
                                         <div className="flex items-start gap-3">
                                             <Monitor size={20} className="text-[hsl(var(--color-text-muted))] mt-0.5" />
                                             <div className="flex-1">
-                                                <p
-                                                    className="font-semibold hover:text-blue-600 transition-colors cursor-pointer"
-                                                    onClick={() => navigate(`/inventory/${screen.id}`)}
-                                                >
-                                                    {screen.name}
-                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <p
+                                                        className="font-semibold hover:text-blue-600 transition-colors cursor-pointer"
+                                                        onClick={() => navigate(`/inventory/${screen.id}`)}
+                                                    >
+                                                        {screen.name}
+                                                    </p>
+                                                    <Badge variant="secondary" className="text-[10px] bg-blue-50 text-blue-600 border-blue-100">
+                                                        Qty: {screen.bookedQuantity || 1}
+                                                    </Badge>
+                                                </div>
                                                 <p className="text-sm text-[hsl(var(--color-text-muted))]">{screen.location}</p>
                                             </div>
                                         </div>
@@ -254,6 +266,10 @@ export function CampaignDetail() {
                             <div>
                                 <p className="text-sm text-[hsl(var(--color-text-muted))] mb-1">Estimated Price</p>
                                 <p className="text-2xl font-bold">{formatCurrency(campaign.estimatedPrice)}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-[hsl(var(--color-text-muted))] mb-1">Total Screens</p>
+                                <p className="text-lg font-semibold">{campaign.screens.length} Screens</p>
                             </div>
 
                             <div className="pt-4 border-t border-[hsl(var(--color-border))]">

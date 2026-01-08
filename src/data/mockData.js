@@ -12,8 +12,8 @@ export const mockCampaigns = [
         estimatedPrice: 13500,
         finalPrice: null,
         screens: [
-            { id: 'SCR-001', name: 'Avenues Mall Display', location: 'Kuwait City, Kuwait' },
-            { id: 'SCR-002', name: 'Dubai Mall LED Screen', location: 'Dubai, UAE' }
+            { id: 'SCR-001', name: 'Avenues Mall Display', location: 'Kuwait City, Kuwait', bookedQuantity: 2 },
+            { id: 'SCR-002', name: 'Dubai Mall LED Screen', location: 'Dubai, UAE', bookedQuantity: 1 }
         ],
         slots: [
             { screenId: 'SCR-001', timeSlot: '08:00-12:00', days: 'Mon-Fri' },
@@ -36,7 +36,7 @@ export const mockCampaigns = [
         finalPrice: 22500,
         adminComment: 'Discounted for long-term partnership',
         screens: [
-            { id: 'SCR-003', name: 'Hamad International Airport', location: 'Doha, Qatar' }
+            { id: 'SCR-003', name: 'Hamad International Airport', location: 'Doha, Qatar', bookedQuantity: 1 }
         ],
         slots: [
             { screenId: 'SCR-003', timeSlot: '06:00-23:00', days: 'Daily' }
@@ -57,8 +57,8 @@ export const mockCampaigns = [
         estimatedPrice: 36000,
         finalPrice: 36000,
         screens: [
-            { id: 'SCR-001', name: 'Avenues Mall Display', location: 'Kuwait City, Kuwait' },
-            { id: 'SCR-004', name: 'King Fahd Highway Billboard', location: 'Riyadh, Saudi Arabia' }
+            { id: 'SCR-001', name: 'Avenues Mall Display', location: 'Kuwait City, Kuwait', bookedQuantity: 1 },
+            { id: 'SCR-004', name: 'King Fahd Highway Billboard', location: 'Riyadh, Saudi Arabia', bookedQuantity: 1 }
         ],
         slots: [
             { screenId: 'SCR-001', timeSlot: '12:00-18:00', days: 'Daily' },
@@ -81,7 +81,7 @@ export const mockCampaigns = [
         estimatedPrice: 28500,
         finalPrice: 28500,
         screens: [
-            { id: 'SCR-002', name: 'Dubai Mall LED Screen', location: 'Dubai, UAE' }
+            { id: 'SCR-002', name: 'Dubai Mall LED Screen', location: 'Dubai, UAE', bookedQuantity: 1 }
         ],
         slots: [
             { screenId: 'SCR-002', timeSlot: '00:00-23:59', days: 'Daily' }
@@ -106,7 +106,7 @@ export const mockCampaigns = [
         finalPrice: 18000,
         adminComment: 'Early bird discount applied',
         screens: [
-            { id: 'SCR-005', name: 'Marina Mall Display', location: 'Abu Dhabi, UAE' }
+            { id: 'SCR-005', name: 'Marina Mall Display', location: 'Abu Dhabi, UAE', bookedQuantity: 1 }
         ],
         slots: [
             { screenId: 'SCR-005', timeSlot: '09:00-21:00', days: 'Daily' }
@@ -143,7 +143,12 @@ export const mockScreens = [
             gender: { male: 67, female: 33 },
             ageGroup: { boomers: 24, genX: 28, millennials: 29, genZ: 19 }
         },
-        active: true
+        peakDays: 'Thursday - Sunday',
+        peakHour: '18:00 - 23:00',
+        imp2Weeks: 250000,
+        governorate: 'Capital',
+        active: true,
+        screenQuantity: 3
     },
     {
         id: 'SCR-002',
@@ -156,11 +161,16 @@ export const mockScreens = [
         resolution: { width: 3840, height: 2160 },
         audienceMetadata: 'Premium shopping destination, 800K+ daily impressions',
         demographics: {
-            nationality: { kuwaiti: 20, arab: 30, nonArab: 50 },
-            gender: { male: 60, female: 40 },
+            nationality: { kuwaiti: 10, arab: 20, nonArab: 70 },
+            gender: { male: 55, female: 45 },
             ageGroup: { boomers: 15, genX: 25, millennials: 40, genZ: 20 }
         },
-        active: true
+        peakDays: 'weekends',
+        peakHour: 'morning',
+        imp2Weeks: 150000,
+        governorate: 'Dubai',
+        active: true,
+        screenQuantity: 1
     },
     {
         id: 'SCR-003',
@@ -173,11 +183,16 @@ export const mockScreens = [
         resolution: { width: 3840, height: 2160 },
         audienceMetadata: 'International travelers, 200K+ daily impressions',
         demographics: {
-            nationality: { kuwaiti: 10, arab: 20, nonArab: 70 },
-            gender: { male: 55, female: 45 },
-            ageGroup: { boomers: 30, genX: 30, millennials: 25, genZ: 15 }
+            nationality: { kuwaiti: 70, arab: 20, nonArab: 10 },
+            gender: { male: 70, female: 30 },
+            ageGroup: { boomers: 30, genX: 35, millennials: 25, genZ: 10 }
         },
-        active: true
+        peakDays: 'all',
+        peakHour: 'day',
+        imp2Weeks: 300000,
+        governorate: 'Doha',
+        active: true,
+        screenQuantity: 1
     },
     {
         id: 'SCR-004',
@@ -194,7 +209,9 @@ export const mockScreens = [
             gender: { male: 75, female: 25 },
             ageGroup: { boomers: 20, genX: 35, millennials: 30, genZ: 15 }
         },
-        active: true
+        governorate: 'Riyadh',
+        active: true,
+        screenQuantity: 1
     },
     {
         id: 'SCR-005',
@@ -211,7 +228,12 @@ export const mockScreens = [
             gender: { male: 50, female: 50 },
             ageGroup: { boomers: 25, genX: 25, millennials: 30, genZ: 20 }
         },
-        active: true
+        peakDays: 'weekdays',
+        peakHour: 'afternoon',
+        imp2Weeks: 180000,
+        governorate: 'Abu Dhabi',
+        active: true,
+        screenQuantity: 1
     },
     {
         id: 'SCR-006',
@@ -224,11 +246,16 @@ export const mockScreens = [
         resolution: { width: 1920, height: 1080 },
         audienceMetadata: 'International and domestic travelers, 150K+ daily impressions',
         demographics: {
-            nationality: { kuwaiti: 45, arab: 25, nonArab: 30 },
+            nationality: { kuwaiti: 20, arab: 30, nonArab: 50 },
             gender: { male: 60, female: 40 },
-            ageGroup: { boomers: 30, genX: 30, millennials: 25, genZ: 15 }
+            ageGroup: { boomers: 20, genX: 30, millennials: 35, genZ: 15 }
         },
-        active: true
+        peakDays: 'all',
+        peakHour: 'all',
+        imp2Weeks: 400000,
+        governorate: 'Farwaniya',
+        active: true,
+        screenQuantity: 1
     },
     {
         id: 'SCR-007',
@@ -245,7 +272,9 @@ export const mockScreens = [
             gender: { male: 70, female: 30 },
             ageGroup: { boomers: 20, genX: 30, millennials: 30, genZ: 20 }
         },
-        active: true
+        governorate: 'Dubai',
+        active: true,
+        screenQuantity: 1
     },
     {
         id: 'SCR-008',
@@ -262,6 +291,8 @@ export const mockScreens = [
             gender: { male: 65, female: 35 },
             ageGroup: { boomers: 25, genX: 30, millennials: 25, genZ: 20 }
         },
-        active: false
+        governorate: 'Jeddah',
+        active: false,
+        screenQuantity: 1
     }
 ];

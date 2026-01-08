@@ -13,7 +13,7 @@ export function EventCalendar() {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [locationFilter, setLocationFilter] = useState('all');
-    const [peakFilter, setPeakFilter] = useState('all');
+    const [impactFilter, setImpactFilter] = useState('all'); // 'all', 'increase', 'decrease'
 
     const filteredEvents = useMemo(() => {
         return mockEvents.filter(event => {
@@ -22,11 +22,15 @@ export function EventCalendar() {
                 event.name.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesLocation = locationFilter === 'all' || event.location === locationFilter;
-            const matchesPeak = peakFilter === 'all' || event.peakClassification === peakFilter;
+            const matchesImpact = impactFilter === 'all'
+                ? true
+                : impactFilter === 'increase'
+                    ? event.eventPricePercentage > 0
+                    : event.eventPricePercentage < 0;
 
-            return matchesSearch && matchesLocation && matchesPeak;
+            return matchesSearch && matchesLocation && matchesImpact;
         });
-    }, [searchTerm, locationFilter, peakFilter]);
+    }, [searchTerm, locationFilter, impactFilter]);
 
     const formatDateRange = (startDate, endDate) => {
         const start = new Date(startDate);
@@ -84,12 +88,12 @@ export function EventCalendar() {
                 <Card>
                     <div className="flex items-center gap-4">
                         <div className="p-3 rounded-full bg-orange-50 text-orange-600">
-                            <Calendar size={24} />
+                            <Plus size={24} />
                         </div>
                         <div>
-                            <p className="text-sm font-medium text-[hsl(var(--color-text-muted))]">Peak Events</p>
+                            <p className="text-sm font-medium text-[hsl(var(--color-text-muted))]">Price Adjustments</p>
                             <div className="text-2xl font-bold">
-                                {filteredEvents.filter(e => e.peakClassification === 'peak').length}
+                                {filteredEvents.filter(e => e.eventPricePercentage !== 0).length}
                             </div>
                         </div>
                     </div>
@@ -129,10 +133,10 @@ export function EventCalendar() {
                         ))}
                     </Select>
 
-                    <Select value={peakFilter} onChange={(e) => setPeakFilter(e.target.value)}>
-                        <option value="all">All Classifications</option>
-                        <option value="peak">Peak</option>
-                        <option value="off-peak">Off-Peak</option>
+                    <Select value={impactFilter} onChange={(e) => setImpactFilter(e.target.value)}>
+                        <option value="all">All Impacts</option>
+                        <option value="increase">Price Increase</option>
+                        <option value="decrease">Price Decrease</option>
                     </Select>
                 </div>
             </Card>
@@ -145,7 +149,7 @@ export function EventCalendar() {
                             <TableHead>Event</TableHead>
                             <TableHead>Date Range</TableHead>
                             <TableHead>Location</TableHead>
-                            <TableHead>Classification</TableHead>
+                            <TableHead>Price Factor</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -186,8 +190,8 @@ export function EventCalendar() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={event.peakClassification === 'peak' ? 'warning' : 'default'}>
-                                            {event.peakClassification === 'peak' ? 'Peak' : 'Off-Peak'}
+                                        <Badge variant={event.eventPricePercentage > 0 ? 'warning' : 'default'}>
+                                            {event.eventPricePercentage > 0 ? '+' : ''}{event.eventPricePercentage}%
                                         </Badge>
                                     </TableCell>
                                     <TableCell>

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -14,7 +13,6 @@ export function PricingConfiguration() {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [screenFilter, setScreenFilter] = useState('all');
-    const [peakFilter, setPeakFilter] = useState('all');
 
     const filteredPricing = useMemo(() => {
         return mockPricing.filter(price => {
@@ -23,11 +21,10 @@ export function PricingConfiguration() {
                 price.screenName.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesScreen = screenFilter === 'all' || price.screenId === screenFilter;
-            const matchesPeak = peakFilter === 'all' || price.peakType === peakFilter;
 
-            return matchesSearch && matchesScreen && matchesPeak;
+            return matchesSearch && matchesScreen;
         });
-    }, [searchTerm, screenFilter, peakFilter]);
+    }, [searchTerm, screenFilter]);
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-KW', {
@@ -57,7 +54,7 @@ export function PricingConfiguration() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                     <div className="flex items-center gap-4">
                         <div className="p-3 rounded-full bg-blue-50 text-blue-600">
@@ -82,24 +79,11 @@ export function PricingConfiguration() {
                         </div>
                     </div>
                 </Card>
-                <Card>
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-full bg-purple-50 text-purple-600">
-                            <DollarSign size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-[hsl(var(--color-text-muted))]">Peak Rules</p>
-                            <div className="text-2xl font-bold">
-                                {filteredPricing.filter(p => p.peakType === 'peak').length}
-                            </div>
-                        </div>
-                    </div>
-                </Card>
             </div>
 
             {/* Filters */}
             <Card>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--color-text-muted))]" size={18} />
                         <Input
@@ -116,12 +100,6 @@ export function PricingConfiguration() {
                             <option key={screen.id} value={screen.id}>{screen.name}</option>
                         ))}
                     </Select>
-
-                    <Select value={peakFilter} onChange={(e) => setPeakFilter(e.target.value)}>
-                        <option value="all">All Peak Types</option>
-                        <option value="peak">Peak</option>
-                        <option value="off-peak">Off-Peak</option>
-                    </Select>
                 </div>
             </Card>
 
@@ -132,8 +110,6 @@ export function PricingConfiguration() {
                         <TableRow>
                             <TableHead>Pricing ID</TableHead>
                             <TableHead>Screen</TableHead>
-                            <TableHead>Slot Time</TableHead>
-                            <TableHead>Peak Type</TableHead>
                             <TableHead className="text-right">Price/Day</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -141,7 +117,7 @@ export function PricingConfiguration() {
                     <TableBody>
                         {filteredPricing.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-[hsl(var(--color-text-muted))]">
+                                <TableCell colSpan={4} className="text-center py-8 text-[hsl(var(--color-text-muted))]">
                                     No pricing rules found matching your filters
                                 </TableCell>
                             </TableRow>
@@ -154,14 +130,6 @@ export function PricingConfiguration() {
                                 >
                                     <TableCell className="font-mono font-semibold">{price.id}</TableCell>
                                     <TableCell className="font-medium">{price.screenName}</TableCell>
-                                    <TableCell className="text-sm text-[hsl(var(--color-text-muted))]">
-                                        {price.slotTime}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={price.peakType === 'peak' ? 'warning' : 'default'}>
-                                            {price.peakType === 'peak' ? 'Peak' : 'Off-Peak'}
-                                        </Badge>
-                                    </TableCell>
                                     <TableCell className="text-right font-bold text-lg">
                                         {formatCurrency(price.pricePerDay)}
                                     </TableCell>

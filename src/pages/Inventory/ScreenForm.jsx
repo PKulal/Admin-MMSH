@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Switch } from '../../components/ui/Switch';
-import { ArrowLeft, Save, Plus, X, Upload, Users, PlayCircle as MediaIcon } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Users, PlayCircle as MediaIcon } from 'lucide-react';
 import { mockScreens } from '../../data/mockData';
 
 export function ScreenForm() {
@@ -24,6 +24,8 @@ export function ScreenForm() {
             size: { width: '', height: '' },
             resolution: { width: '', height: '' },
             audienceMetadata: '',
+            screenQuantity: 1,
+            imp2Weeks: 0,
             demographics: {
                 nationality: { kuwaiti: 0, arab: 0, nonArab: 0 },
                 gender: { male: 0, female: 0 },
@@ -116,7 +118,7 @@ export function ScreenForm() {
                             <CardHeader>
                                 <CardTitle>Basic Information</CardTitle>
                             </CardHeader>
-                            <div className="space-y-4">
+                            <div className="p-6 pt-0 space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
                                         Screen Name *
@@ -167,6 +169,40 @@ export function ScreenForm() {
                                         />
                                     </div>
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
+                                            Screen Quantity *
+                                        </label>
+                                        <Input
+                                            required
+                                            type="number"
+                                            min="1"
+                                            value={formData.screenQuantity}
+                                            onChange={(e) => updateField('screenQuantity', parseInt(e.target.value) || 1)}
+                                            placeholder="e.g., 1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
+                                            IMP-2weeks *
+                                        </label>
+                                        <div className="relative">
+                                            <Input
+                                                required
+                                                type="number"
+                                                min="0"
+                                                value={formData.imp2Weeks}
+                                                onChange={(e) => updateField('imp2Weeks', parseInt(e.target.value) || 0)}
+                                                placeholder="e.g., 250000"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[hsl(var(--color-text-muted))] uppercase tracking-wider">
+                                                IMP
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </Card>
 
@@ -174,7 +210,7 @@ export function ScreenForm() {
                             <CardHeader>
                                 <CardTitle>Screen Specifications</CardTitle>
                             </CardHeader>
-                            <div className="space-y-4">
+                            <div className="p-6 pt-0 space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
@@ -360,7 +396,7 @@ export function ScreenForm() {
                             <CardHeader>
                                 <CardTitle>Status</CardTitle>
                             </CardHeader>
-                            <div className="flex items-center justify-between">
+                            <div className="p-6 pt-0 flex items-center justify-between">
                                 <div>
                                     <p className="font-medium text-[hsl(var(--color-text-main))]">Active</p>
                                     <p className="text-sm text-[hsl(var(--color-text-muted))]">
@@ -378,7 +414,7 @@ export function ScreenForm() {
                             <CardHeader>
                                 <CardTitle>Actions</CardTitle>
                             </CardHeader>
-                            <div className="space-y-3">
+                            <div className="p-6 pt-0 space-y-3">
                                 <Button type="submit" className="w-full">
                                     <Save size={18} className="mr-2" />
                                     {isEdit ? 'Update Screen' : 'Create Screen'}
