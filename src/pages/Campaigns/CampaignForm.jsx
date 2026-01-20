@@ -28,10 +28,13 @@ import {
     X,
     Sun,
     Moon,
-    Zap
+    Zap,
+    Plus,
+    Users
 } from 'lucide-react';
 import { mockCampaigns, mockTenants, mockScreens } from '../../data/mockData';
 import { mockPricing } from '../../data/mockPricing';
+import { mockContracts } from '../../data/mockContracts';
 
 const STEPS = [
     { id: 1, title: 'Basics', icon: Info },
@@ -62,11 +65,14 @@ export function CampaignForm() {
 
     // Filters for Step 2
     const [filters, setFilters] = useState({
-        governorate: '',
-        gender: '',
-        age: '',
-        screenType: '',
-        nationality: ''
+        governorate: 'All',
+        screenType: 'All',
+        genderType: 'All',
+        genderMin: 0,
+        ageType: 'All',
+        ageMin: 0,
+        nationalityType: 'All',
+        nationalityMin: 0
     });
 
     const [formData, setFormData] = useState({
@@ -75,20 +81,20 @@ export function CampaignForm() {
         tenantId: existingCampaign?.tenantId || '',
         startDate: existingCampaign?.startDate || '',
         endDate: existingCampaign?.endDate || '',
-        screens: existingCampaign?.screens?.map(s => ({
-            ...s,
-            bookedQuantity: s.bookedQuantity || 1
+        bookings: existingCampaign?.screens?.map((s, idx) => ({
+            id: `BOOK-${Date.now()}-${idx}`,
+            screenId: s.id,
+            screenName: s.name,
+            location: s.location,
+            type: s.type,
+            startDate: existingCampaign.startDate,
+            endDate: existingCampaign.endDate,
+            quantity: s.bookedQuantity || 1,
+            segments: existingCampaign.slots
+                ?.filter(slot => slot.screenId === s.id)
+                ?.map(slot => slot.startTime || (slot.timeSlot ? slot.timeSlot.split('-')[0] : null))
+                ?.filter(Boolean) || []
         })) || [],
-        // screenId -> array of hours (e.g. ["08:00", "09:00"])
-        hourlySegments: existingCampaign?.slots?.reduce((acc, slot) => {
-            if (!acc[slot.screenId]) acc[slot.screenId] = [];
-            // Handle different slot formats from mock data
-            const segment = slot.startTime || (slot.timeSlot ? slot.timeSlot.split('-')[0] : null);
-            if (segment && !acc[slot.screenId].includes(segment)) {
-                acc[slot.screenId].push(segment);
-            }
-            return acc;
-        }, {}) || {},
         estimatedPrice: existingCampaign?.estimatedPrice || 0,
         status: existingCampaign?.status || 'booked',
         media: existingCampaign?.media || []
@@ -107,89 +113,81 @@ export function CampaignForm() {
         }));
     };
 
-    const toggleScreen = (screen) => {
-        setFormData(prev => {
-            const isSelected = prev.screens.some(s => s.id === screen.id);
-            if (isSelected) {
-                const newScreens = prev.screens.filter(s => s.id !== screen.id);
-                const newSegments = { ...prev.hourlySegments };
-                delete newSegments[screen.id];
-                return { ...prev, screens: newScreens, hourlySegments: newSegments };
-            } else {
+    const addBooking = (screen) => {
+        const newBooking = {
+            id: `BOOK-${Date.now()}`,
+            screenId: screen.id,
+            screenName: screen.name,
+            location: screen.location,
+            type: screen.type,
+            resolution: screen.resolution,
+            size: screen.size,
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            quantity: 1,
+            segments: []
+        };
+        setFormData(prev => ({
+            ...prev,
+            bookings: [...prev.bookings, newBooking]
+        }));
+    };
+
+    const removeBooking = (bookingId) => {
+        setFormData(prev => ({
+            ...prev,
+            bookings: prev.bookings.filter(b => b.id !== bookingId)
+        }));
+    };
+
+    const updateBooking = (bookingId, updates) => {
+        setFormData(prev => ({
+            ...prev,
+            bookings: prev.bookings.map(b => b.id === bookingId ? { ...b, ...updates } : b)
+        }));
+    };
+
+    const toggleSegment = (bookingId, segment) => {
+        setFormData(prev => ({
+            ...prev,
+            bookings: prev.bookings.map(b => {
+                if (b.id !== bookingId) return b;
+                const isSelected = b.segments.includes(segment);
                 return {
-                    ...prev,
-                    screens: [...prev.screens, { ...screen, bookedQuantity: 1 }]
+                    ...b,
+                    segments: isSelected
+                        ? b.segments.filter(s => s !== segment)
+                        : [...b.segments, segment]
                 };
-            }
-        });
-    };
-
-    const updateScreenQuantity = (screenId, quantity) => {
-        setFormData(prev => ({
-            ...prev,
-            screens: prev.screens.map(s => s.id === screenId ? { ...s, bookedQuantity: quantity } : s)
+            })
         }));
     };
 
-    const toggleSegment = (screenId, segment) => {
-        setFormData(prev => {
-            const currentSegments = prev.hourlySegments[screenId] || [];
-            const isSelected = currentSegments.includes(segment);
-
-            let newSegments;
-            if (isSelected) {
-                newSegments = currentSegments.filter(s => s !== segment);
-            } else {
-                newSegments = [...currentSegments, segment];
-            }
-
-            return {
-                ...prev,
-                hourlySegments: {
-                    ...prev.hourlySegments,
-                    [screenId]: newSegments
-                }
-            };
-        });
-    };
-
-    const toggleAllSegments = (screenId) => {
+    const toggleAllSegments = (bookingId) => {
         setFormData(prev => ({
             ...prev,
-            hourlySegments: {
-                ...prev.hourlySegments,
-                [screenId]: [...HOURLY_SEGMENTS]
-            }
+            bookings: prev.bookings.map(b => b.id === bookingId ? { ...b, segments: [...HOURLY_SEGMENTS] } : b)
         }));
     };
 
-    const togglePeakSegments = (screenId) => {
+    const togglePeakSegments = (bookingId) => {
         setFormData(prev => ({
             ...prev,
-            hourlySegments: {
-                ...prev.hourlySegments,
-                [screenId]: [...PEAK_HOURS]
-            }
+            bookings: prev.bookings.map(b => b.id === bookingId ? { ...b, segments: [...PEAK_HOURS] } : b)
         }));
     };
 
-    const toggleNonPeakSegments = (screenId) => {
+    const toggleNonPeakSegments = (bookingId) => {
         setFormData(prev => ({
             ...prev,
-            hourlySegments: {
-                ...prev.hourlySegments,
-                [screenId]: [...NON_PEAK_HOURS]
-            }
+            bookings: prev.bookings.map(b => b.id === bookingId ? { ...b, segments: [...NON_PEAK_HOURS] } : b)
         }));
     };
 
-    const clearSegments = (screenId) => {
+    const clearSegments = (bookingId) => {
         setFormData(prev => ({
             ...prev,
-            hourlySegments: {
-                ...prev.hourlySegments,
-                [screenId]: []
-            }
+            bookings: prev.bookings.map(b => b.id === bookingId ? { ...b, segments: [] } : b)
         }));
     };
 
@@ -216,10 +214,11 @@ export function CampaignForm() {
 
     const handleAddMedia = () => {
         // Simulation: just add a mock object
-        const uploadScreen = formData.screens[selectedScreenIndex];
+        const currentBooking = formData.bookings[selectedScreenIndex];
         const newMedia = {
             id: `MEDIA-${Date.now()}`,
-            screenId: uploadScreen?.id,
+            bookingId: currentBooking?.id,
+            screenId: currentBooking?.screenId,
             fileName: 'new_ad_asset.mp4',
             uploadedAt: new Date().toISOString().split('T')[0],
             url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
@@ -233,36 +232,90 @@ export function CampaignForm() {
 
     const filteredScreens = useMemo(() => {
         return mockScreens.filter(screen => {
-            const matchesSearch = screen.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            const matchesSearch = !searchTerm ||
+                screen.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 screen.location.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesType = !filters.screenType || screen.type === filters.screenType.toLowerCase();
-            // In a real app, other filters would be checked against screen metadata
-            return matchesSearch && matchesType;
+
+            const matchesType = filters.screenType === 'All' || screen.type.toLowerCase() === filters.screenType.toLowerCase();
+            const matchesGovernorate = filters.governorate === 'All' || screen.governorate === filters.governorate;
+
+            // Demographic Matching
+            const matchesGender = filters.genderType === 'All' ||
+                (screen.demographics?.gender?.[filters.genderType.toLowerCase()] || 0) >= filters.genderMin;
+
+            const matchesAge = filters.ageType === 'All' ||
+                (screen.demographics?.ageGroup?.[filters.ageType] || 0) >= filters.ageMin;
+
+            const matchesNationality = filters.nationalityType === 'All' ||
+                (screen.demographics?.nationality?.[filters.nationalityType] || 0) >= filters.nationalityMin;
+
+            return matchesSearch && matchesType && matchesGovernorate && matchesGender && matchesAge && matchesNationality;
         });
     }, [searchTerm, filters]);
 
     const calculatePrice = useMemo(() => {
         let total = 0;
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
-        const diffTime = Math.abs(end - start);
-        const diffDays = (isNaN(diffTime) ? 0 : Math.ceil(diffTime / (1000 * 60 * 60 * 24))) + 1;
 
-        Object.entries(formData.hourlySegments).forEach(([screenId, segments]) => {
-            if (!Array.isArray(segments)) return;
-            segments.forEach(segment => {
-                if (!segment || typeof segment !== 'string') return;
-                const pricingRule = mockPricing.find(p => p.screenId === screenId && p.slotTime?.startsWith(segment.split(':')[0]));
-                const pricePerHour = pricingRule?.pricePerDay ? pricingRule.pricePerDay / 4 : 50; // Mock calculation
+        // Find active contract for this tenant and date range
+        const activeContract = mockContracts.find(c =>
+            c.tenantName === formData.tenant &&
+            c.status === 'active' &&
+            new Date(formData.startDate) >= new Date(c.startDate) &&
+            new Date(formData.endDate) <= new Date(c.endDate)
+        );
 
-                const selectedScreen = formData.screens.find(s => s.id === screenId);
-                const qty = selectedScreen?.bookedQuantity || 1;
+        formData.bookings.forEach(booking => {
+            const start = new Date(booking.startDate || formData.startDate);
+            const end = new Date(booking.endDate || formData.endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = (isNaN(diffTime) ? 0 : Math.ceil(diffTime / (1000 * 60 * 60 * 24))) + 1;
 
-                total += pricePerHour * diffDays * qty;
+            booking.segments.forEach(segment => {
+                let pricePerHour = 50; // Fallback
+
+                // Check if contract applies to this screen
+                const contractApplies = activeContract && (
+                    activeContract.screenSubset === 'all' ||
+                    (activeContract.screens && activeContract.screens.includes(booking.screenId))
+                );
+
+                if (contractApplies && activeContract.pricingType === 'fixed') {
+                    pricePerHour = activeContract.pricingValue;
+                } else {
+                    const pricingRule = mockPricing.find(p => p.screenId === booking.screenId && p.slotTime?.startsWith(segment.split(':')[0]));
+                    pricePerHour = pricingRule?.pricePerDay ? pricingRule.pricePerDay / 4 : 50;
+
+                    // Apply discount if contract is discount-based
+                    if (contractApplies && activeContract.pricingType === 'discount') {
+                        pricePerHour = pricePerHour * (1 - (activeContract.pricingValue / 100));
+                    }
+                }
+
+                total += pricePerHour * diffDays * (booking.quantity || 1);
             });
         });
         return total;
-    }, [formData.hourlySegments, formData.startDate, formData.endDate]);
+    }, [formData.bookings, formData.startDate, formData.endDate, formData.tenant]);
+
+    const calculateImpressions = useMemo(() => {
+        let total = 0;
+        formData.bookings.forEach(booking => {
+            const screen = mockScreens.find(s => s.id === booking.screenId);
+            if (!screen) return;
+
+            const start = new Date(booking.startDate || formData.startDate);
+            const end = new Date(booking.endDate || formData.endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = (isNaN(diffTime) ? 0 : Math.ceil(diffTime / (1000 * 60 * 60 * 24))) + 1;
+
+            // Simple calculation: (imp2Weeks / 14) * days * (hours selected / 24) * qty
+            const dailyRate = (screen.imp2Weeks || 0) / 14;
+            const hourWeight = (booking.segments?.length || 0) / 24;
+            const subtotal = dailyRate * diffDays * hourWeight * (booking.quantity || 1);
+            if (!isNaN(subtotal)) total += subtotal;
+        });
+        return Math.round(total);
+    }, [formData.bookings, formData.startDate, formData.endDate]);
 
     useEffect(() => {
         if (currentStep === 4) {
@@ -362,80 +415,156 @@ export function CampaignForm() {
                         </div>
 
                         {/* Filter Bar */}
-                        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-2">
-                            <div className="relative col-span-2">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                    placeholder="Search screens..."
-                                    className="pl-10"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                        <div className="space-y-4 pt-2">
+                            {/* Row 1: Basic Filters */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div className="relative col-span-2">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                    <Input
+                                        placeholder="Search screens by name or location..."
+                                        className="pl-10 h-10"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <Select value={filters.governorate} onChange={(e) => setFilters({ ...filters, governorate: e.target.value })} className="h-10">
+                                    <option value="All">All Governorates</option>
+                                    <option value="Capital">Capital</option>
+                                    <option value="Hawally">Hawally</option>
+                                    <option value="M.Kabeer">M.Kabeer</option>
+                                    <option value="Ahmadi">Ahmadi</option>
+                                    <option value="Jahara">Jahara</option>
+                                    <option value="Farwania">Farwania</option>
+                                </Select>
+                                <Select value={filters.screenType} onChange={(e) => setFilters({ ...filters, screenType: e.target.value })} className="h-10">
+                                    <option value="All">All Screen Types</option>
+                                    <option value="Outdoor">Outdoor</option>
+                                    <option value="Indoor">Indoor</option>
+                                </Select>
                             </div>
-                            <Select value={filters.governorate} onChange={(e) => setFilters({ ...filters, governorate: e.target.value })}>
-                                <option value="All">Governorate</option>
-                                <option value="Capital">Capital</option>
-                                <option value="Hawally">Hawally</option>
-                                <option value="M.Kabeer">M.Kabeer</option>
-                                <option value="Ahmadi">Ahmadi</option>
-                                <option value="Jahara">Jahara</option>
-                                <option value="Farwania">Farwania</option>
-                            </Select>
-                            <Select value={filters.gender} onChange={(e) => setFilters({ ...filters, gender: e.target.value })}>
-                                <option value="All">Gender</option>
-                                <option value="Male">Male 0%-30%</option>
-                                <option value="Male">Male 30%-60%</option>
-                                <option value="Male">Male 60%-100%</option>
-                                <option value="Female">Female 0%-30%</option>
-                                <option value="Female">Female 30%-60%</option>
-                                <option value="Female">Female 60%-100%</option>
-                            </Select>
-                            <Select value={filters.age} onChange={(e) => setFilters({ ...filters, age: e.target.value })}>
-                                <option value="All">Age</option>
-                                <option value="Boomers (61-80)">Boomers (61-80):0%-30%</option>
-                                <option value="Boomers (61-80)">Boomers (61-80):30%-60%</option>
-                                <option value="Boomers (61-80)">Boomers (61-80):60%-100%</option>
-                                <option value="GenX (45-60)">GenX (45-60):0%-30%</option>
-                                <option value="GenX (45-60)">GenX (45-60):30%-60%</option>
-                                <option value="GenX (45-60)">GenX (45-60):60%-100%</option>
-                                <option value="Millennials (29 - 44)">Millennials (29 - 44):0%-30%</option>
-                                <option value="Millennials (29 - 44)">Millennials (29 - 44):30%-60%</option>
-                                <option value="Millennials (29 - 44)">Millennials (29 - 44):60%-100%</option>
-                                <option value="Gen Z (Less Than 28)">Gen Z (Less Than 28):0%-30%</option>
-                                <option value="Gen Z (Less Than 28)">Gen Z (Less Than 28):30%-60%</option>
-                                <option value="Gen Z (Less Than 28)">Gen Z (Less Than 28):60%-100%</option>
-                            </Select>
-                            <Select value={filters.screenType} onChange={(e) => setFilters({ ...filters, screenType: e.target.value })}>
-                                <option value="">Screen Types</option>
-                                <option value="Outdoor">Outdoor</option>
-                                <option value="Indoor">Indoor</option>
-                            </Select>
-                            <Select value={filters.screenType} onChange={(e) => setFilters({ ...filters, screenType: e.target.value })}>
-                                <option value="All">Nationality</option>
-                                <option value="Kuwaiti">Kuwaiti 0%-30%</option>
-                                <option value="Kuwaiti">Kuwaiti 30%-60%</option>
-                                <option value="Kuwaiti">Kuwaiti 60%-100%</option>
-                                <option value="Arab">Arab 0%-30%</option>
-                                <option value="Arab">Arab 30%-60%</option>
-                                <option value="Arab">Arab 60%-100%</option>
-                                <option value="Non Arab">Non Arab 0%-30%</option>
-                                <option value="Non Arab">Non Arab 30%-60%</option>
-                                <option value="Non Arab">Non Arab 60%-100%</option>
-                            </Select>
 
+                            {/* Row 2: Demographic Sliders */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+                                {/* Gender Slider */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Gender Targeting</label>
+                                        <span className="text-[10px] font-bold text-blue-600">{filters.genderMin}% Min</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Select
+                                            value={filters.genderType}
+                                            onChange={(e) => setFilters({ ...filters, genderType: e.target.value, genderMin: e.target.value === 'All' ? 0 : filters.genderMin })}
+                                            className="h-8 text-[11px] w-[100px]"
+                                        >
+                                            <option value="All">All Genders</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                        </Select>
+                                        <Input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            step="5"
+                                            disabled={filters.genderType === 'All'}
+                                            value={filters.genderMin}
+                                            onChange={(e) => setFilters({ ...filters, genderMin: parseInt(e.target.value) })}
+                                            className="h-8 flex-1 accent-black"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Age Slider */}
+                                <div className="space-y-2 border-x border-gray-100 px-6">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Age Group</label>
+                                        <span className="text-[10px] font-bold text-blue-600">{filters.ageMin}% Min</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Select
+                                            value={filters.ageType}
+                                            onChange={(e) => setFilters({ ...filters, ageType: e.target.value, ageMin: e.target.value === 'All' ? 0 : filters.ageMin })}
+                                            className="h-8 text-[11px] w-[120px]"
+                                        >
+                                            <option value="All">All Ages</option>
+                                            <option value="boomers">Boomers (61-80)</option>
+                                            <option value="genX">GenX (45-60)</option>
+                                            <option value="millennials">Millennials (29-44)</option>
+                                            <option value="genZ">Gen Z ({"<"}28)</option>
+                                        </Select>
+                                        <Input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            step="5"
+                                            disabled={filters.ageType === 'All'}
+                                            value={filters.ageMin}
+                                            onChange={(e) => setFilters({ ...filters, ageMin: parseInt(e.target.value) })}
+                                            className="h-8 flex-1 accent-black"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Nationality Slider */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nationality</label>
+                                        <span className="text-[10px] font-bold text-blue-600">{filters.nationalityMin}% Min</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Select
+                                            value={filters.nationalityType}
+                                            onChange={(e) => setFilters({ ...filters, nationalityType: e.target.value, nationalityMin: e.target.value === 'All' ? 0 : filters.nationalityMin })}
+                                            className="h-8 text-[11px] w-[120px]"
+                                        >
+                                            <option value="All">All Nationalities</option>
+                                            <option value="kuwaiti">Kuwaiti</option>
+                                            <option value="arab">Arab</option>
+                                            <option value="nonArab">Non-Arab</option>
+                                        </Select>
+                                        <Input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            step="5"
+                                            disabled={filters.nationalityType === 'All'}
+                                            value={filters.nationalityMin}
+                                            onChange={(e) => setFilters({ ...filters, nationalityMin: parseInt(e.target.value) })}
+                                            className="h-8 flex-1 accent-black"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Screen Cards Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredScreens.map(screen => {
-                                const isSelected = formData.screens.some(s => s.id === screen.id);
-                                const segmentCount = formData.hourlySegments[screen.id]?.length || 0;
+                                const screenBookingsCount = formData.bookings.filter(b => b.screenId === screen.id).length;
+                                const isSelected = screenBookingsCount > 0;
+                                const totalReserved = formData.bookings
+                                    .filter(b => b.screenId === screen.id)
+                                    .reduce((sum, b) => sum + (b.quantity || 1), 0);
+                                const availableQty = (screen.screenQuantity || 1) - totalReserved;
+
                                 return (
-                                    <Card key={screen.id} className={`overflow-hidden transition-all border-2 ${isSelected ? 'border-black' : 'border-transparent'}`}>
+                                    <Card key={screen.id} className={`overflow-hidden transition-all border-2 ${isSelected ? 'border-primary' : 'border-transparent'}`}>
                                         <div className="p-5 space-y-4">
-                                            <Badge variant="outline" className="text-[10px] uppercase tracking-wider bg-gray-50 border-gray-200 text-gray-500">
-                                                {screen.type}
-                                            </Badge>
+                                            <div className="flex justify-between items-start">
+                                                <Badge variant="outline" className="text-[10px] uppercase tracking-wider bg-gray-50 border-gray-200 text-gray-500">
+                                                    {screen.type}
+                                                </Badge>
+                                                <div className="flex gap-2">
+                                                    <Badge variant="secondary" className="text-[10px] bg-blue-50 text-blue-600 border-blue-100">
+                                                        Available: {availableQty}/{screen.screenQuantity || 1}
+                                                    </Badge>
+                                                    {isSelected && (
+                                                        <Badge className="bg-black text-white text-[10px]">
+                                                            {screenBookingsCount} {screenBookingsCount === 1 ? 'Booking' : 'Bookings'}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
                                             <div>
                                                 <h3 className="font-bold text-lg leading-tight">{screen.name}</h3>
                                                 <p className="text-sm text-[hsl(var(--color-text-muted))]">{screen.location}</p>
@@ -444,17 +573,12 @@ export function CampaignForm() {
                                             <div className="grid grid-cols-2 gap-4 pb-2 border-b border-gray-100">
                                                 <div>
                                                     <p className="text-[10px] text-gray-400 uppercase">Size</p>
-                                                    <p className="text-sm font-medium">{screen.size?.width}ft x {screen.size?.height}ft</p>
+                                                    <p className="text-sm font-medium">{screen.size?.width}m x {screen.size?.height}m</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] text-gray-400 uppercase">Resolution</p>
                                                     <p className="text-sm font-medium">{screen.resolution?.width}×{screen.resolution?.height}</p>
                                                 </div>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-[10px] text-gray-400 uppercase">Active Hourly Segments</p>
-                                                <p className="text-sm font-medium">{segmentCount} / 24 hours</p>
                                             </div>
 
                                             <div className="flex justify-between items-center pt-2">
@@ -470,51 +594,14 @@ export function CampaignForm() {
                                                     <Button
                                                         size="sm"
                                                         variant={isSelected ? "default" : "outline"}
-                                                        className={`rounded-md h-8 px-4 ${isSelected ? "bg-black text-white hover:bg-gray-800" : "bg-white text-black border-black hover:bg-gray-50"}`}
-                                                        onClick={() => toggleScreen(screen)}
+                                                        className={`rounded-md h-8 px-4 transition-all ${isSelected ? 'bg-black text-white hover:bg-gray-800' : 'border-gray-200 hover:border-black'}`}
+                                                        onClick={() => addBooking(screen)}
+                                                        disabled={availableQty <= 0}
                                                     >
-                                                        {isSelected ? 'Selected' : 'Select'}
+                                                        {availableQty <= 0 ? 'Fully Booked' : (isSelected ? 'Add Booking' : 'Select Screen')}
                                                     </Button>
                                                 </div>
                                             </div>
-
-                                            {isSelected && (
-                                                <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-[10px] text-gray-400 uppercase">Booked Quantity</p>
-                                                        <p className="text-xs text-blue-600 font-medium">{screen.screenQuantity} available</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="h-7 w-7 p-0 rounded-full"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const currentQty = formData.screens.find(s => s.id === screen.id)?.bookedQuantity || 1;
-                                                                if (currentQty > 1) updateScreenQuantity(screen.id, currentQty - 1);
-                                                            }}
-                                                        >
-                                                            -
-                                                        </Button>
-                                                        <span className="font-bold text-sm w-4 text-center">
-                                                            {formData.screens.find(s => s.id === screen.id)?.bookedQuantity || 1}
-                                                        </span>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="h-7 w-7 p-0 rounded-full"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const currentQty = formData.screens.find(s => s.id === screen.id)?.bookedQuantity || 1;
-                                                                if (currentQty < screen.screenQuantity) updateScreenQuantity(screen.id, currentQty + 1);
-                                                            }}
-                                                        >
-                                                            +
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     </Card>
                                 );
@@ -522,122 +609,174 @@ export function CampaignForm() {
                         </div>
                     </div>
                 );
-            case 3:
-                const currentScreen = formData.screens[selectedScreenIndex];
-                const selectedSegments = formData.hourlySegments[currentScreen?.id] || [];
+            case 3: {
+                const currentBooking = formData.bookings[selectedScreenIndex];
+                const selectedSegments = currentBooking?.segments || [];
 
                 return (
-                    <div className="max-w-5xl mx-auto">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                            {/* Sidebar */}
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            {/* Bookings Sidebar */}
                             <div className="md:col-span-1 space-y-4">
-                                <h3 className="text-sm font-bold">Your Screens ({formData.screens.length})</h3>
-                                <div className="space-y-2">
-                                    {formData.screens.map((screen, idx) => (
-                                        <div
-                                            key={screen.id}
-                                            onClick={() => setSelectedScreenIndex(idx)}
-                                            className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedScreenIndex === idx
-                                                ? 'border-black shadow-sm bg-white'
-                                                : 'border-transparent bg-gray-50/50 hover:bg-gray-50 text-gray-400'
-                                                }`}
-                                        >
-                                            <p className="text-xs font-bold leading-tight truncate">{screen.name}</p>
-                                            <p className="text-[10px] mt-1">
-                                                {formData.hourlySegments[screen.id]?.length > 0
-                                                    ? `${formData.hourlySegments[screen.id].length} segments`
-                                                    : 'None selected'}
-                                            </p>
-                                        </div>
-                                    ))}
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Bookings ({formData.bookings.length})</h4>
+                                    <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                                        {formData.bookings.map((booking, index) => (
+                                            <div
+                                                key={booking.id}
+                                                onClick={() => setSelectedScreenIndex(index)}
+                                                className={`p-3 rounded-xl border cursor-pointer transition-all ${selectedScreenIndex === index
+                                                    ? 'border-black bg-white shadow-sm ring-1 ring-black text-black'
+                                                    : 'border-transparent bg-gray-50/50 hover:bg-gray-50 text-gray-400'
+                                                    }`}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <p className="text-xs font-bold leading-tight truncate">{booking.screenName}</p>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 w-6 p-0 text-gray-300 hover:text-red-500"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            removeBooking(booking.id);
+                                                            if (selectedScreenIndex >= index && selectedScreenIndex > 0) setSelectedScreenIndex(prev => prev - 1);
+                                                        }}
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </Button>
+                                                </div>
+                                                <p className="text-[10px] mt-1 font-medium">
+                                                    {booking.startDate ? new Date(booking.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Set Date'} - {booking.endDate ? new Date(booking.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Set Date'}
+                                                </p>
+                                                <p className="text-[10px]">
+                                                    {booking.segments.length > 0
+                                                        ? `${booking.segments.length} segments`
+                                                        : 'None selected'}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full mt-4 text-xs h-9 border-dashed"
+                                        onClick={() => setCurrentStep(2)}
+                                    >
+                                        <Plus size={14} className="mr-2" /> Add More
+                                    </Button>
                                 </div>
                             </div>
 
                             {/* Main Grid */}
                             <div className="md:col-span-3 space-y-6">
                                 <div className="bg-white p-6 border rounded-2xl shadow-sm space-y-6">
-                                    <div>
-                                        <h2 className="text-2xl font-bold">Scheduling & Segments</h2>
-                                        <p className="text-sm text-[hsl(var(--color-text-muted))]">Review and adjust the hourly segments for each selected screen.</p>
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h2 className="text-2xl font-bold">Scheduling & Segments</h2>
+                                            <p className="text-sm text-[hsl(var(--color-text-muted))]">Define specific dates and hours for this booking.</p>
+                                        </div>
+                                        <Badge variant="outline" className="bg-gray-50">
+                                            Booking #{selectedScreenIndex + 1}
+                                        </Badge>
                                     </div>
 
-                                    {currentScreen && (
-                                        <div className="py-4 border-t border-b border-gray-100">
-                                            <h3 className="text-xl font-bold">{currentScreen.name}</h3>
-                                            <p className="text-sm text-gray-500">{currentScreen.location} • {currentScreen.type}</p>
+                                    {currentBooking && (
+                                        <div className="space-y-6">
+                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                                        <Monitor size={16} /> Screen Details
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-lg font-bold">{currentBooking.screenName}</p>
+                                                        <p className="text-xs text-gray-500">{currentBooking.location} • {currentBooking.type}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                                        <Calendar size={16} /> Booking Dates
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-1">
+                                                            <p className="text-[10px] text-gray-400 uppercase mb-1">From</p>
+                                                            <Input
+                                                                type="date"
+                                                                className="h-9 text-xs"
+                                                                min={formData.startDate}
+                                                                max={formData.endDate}
+                                                                value={currentBooking.startDate}
+                                                                onChange={(e) => updateBooking(currentBooking.id, { startDate: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-[10px] text-gray-400 uppercase mb-1">To</p>
+                                                            <Input
+                                                                type="date"
+                                                                className="h-9 text-xs"
+                                                                min={currentBooking.startDate || formData.startDate}
+                                                                max={formData.endDate}
+                                                                value={currentBooking.endDate}
+                                                                onChange={(e) => updateBooking(currentBooking.id, { endDate: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-8 bg-white border border-gray-100 rounded-3xl shadow-sm space-y-8">
+                                                <div className="flex justify-between items-end">
+                                                    <div className="space-y-1">
+                                                        <h4 className="text-xl font-bold text-gray-900">Select Hourly Segments</h4>
+                                                        <p className="text-sm text-gray-500">Choose the hours for this specific booking period.</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                                                        <Button
+                                                            size="xs"
+                                                            variant="outline"
+                                                            className="text-[10px] h-7 px-2"
+                                                            onClick={() => togglePeakSegments(currentBooking.id)}
+                                                        > Peak </Button>
+                                                        <Button
+                                                            size="xs"
+                                                            variant="outline"
+                                                            className="text-[10px] h-7 px-2"
+                                                            onClick={() => toggleNonPeakSegments(currentBooking.id)}
+                                                        > Non-Peak </Button>
+                                                        <Button
+                                                            size="xs"
+                                                            variant="outline"
+                                                            className="text-[10px] h-7 px-2"
+                                                            onClick={() => toggleAllSegments(currentBooking.id)}
+                                                        > All </Button>
+                                                        <Button
+                                                            size="xs"
+                                                            variant="outline"
+                                                            className="text-[10px] h-7 px-2 text-red-500 hover:bg-red-50"
+                                                            onClick={() => clearSegments(currentBooking.id)}
+                                                        > Clear </Button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                                                    {HOURLY_SEGMENTS.map(segment => {
+                                                        const isSelected = selectedSegments.includes(segment);
+                                                        return (
+                                                            <Button
+                                                                key={segment}
+                                                                variant="outline"
+                                                                className={`h-10 text-xs font-bold rounded-lg transition-all border-gray-200 ${isSelected
+                                                                    ? 'border-black bg-white shadow-sm ring-1 ring-black'
+                                                                    : 'bg-white hover:border-gray-400 opacity-80'
+                                                                    }`}
+                                                                onClick={() => toggleSegment(currentBooking.id, segment)}
+                                                            >
+                                                                {segment}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
-
-                                    <div className="p-8 bg-white border border-gray-100 rounded-3xl shadow-sm space-y-8">
-                                        <div className="space-y-1">
-                                            <h4 className="text-xl font-bold text-gray-900">Select Hourly Segments</h4>
-                                            <p className="text-sm text-gray-500">Choose the hours you want your ad to run. Each segment allows one 10s ad every 180s.</p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={selectedSegments.length > 0}
-                                                className="h-9 px-3 border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
-                                                onClick={() => togglePeakSegments(currentScreen.id)}
-                                            >
-                                                <Sun size={14} className="text-gray-500" />
-                                                Select all peak hours
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={selectedSegments.length > 0}
-                                                className="h-9 px-3 border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
-                                                onClick={() => toggleNonPeakSegments(currentScreen.id)}
-                                            >
-                                                <Moon size={14} className="text-gray-500" />
-                                                Select non-peak hours
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={selectedSegments.length > 0}
-                                                className="h-9 px-3 border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
-                                                onClick={() => toggleAllSegments(currentScreen.id)}
-                                            >
-                                                <Zap size={14} className="text-gray-500" />
-                                                Select all
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-9 px-4 border-gray-300 text-xs font-bold rounded-lg hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
-                                                onClick={() => clearSegments(currentScreen.id)}
-                                            >
-                                                Clear all
-                                            </Button>
-                                        </div>
-
-                                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                                            {HOURLY_SEGMENTS.map(segment => {
-                                                const isSelected = selectedSegments.includes(segment);
-                                                return (
-                                                    <Button
-                                                        key={segment}
-                                                        variant="outline"
-                                                        className={`h-10 text-xs font-bold rounded-lg transition-all border-gray-200 ${isSelected
-                                                            ? 'border-black bg-white shadow-sm ring-1 ring-black'
-                                                            : 'bg-white hover:border-gray-400 opacity-80'
-                                                            }`}
-                                                        onClick={() => toggleSegment(currentScreen.id, segment)}
-                                                    >
-                                                        {segment}
-                                                    </Button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
 
                                     <div className="flex justify-center gap-4 pt-4">
                                         <Button
@@ -646,15 +785,15 @@ export function CampaignForm() {
                                             onClick={() => setSelectedScreenIndex(prev => prev - 1)}
                                             className="px-8 border-gray-200 font-bold"
                                         >
-                                            Previous Screen
+                                            Previous Booking
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            disabled={selectedScreenIndex === formData.screens.length - 1}
+                                            disabled={selectedScreenIndex === formData.bookings.length - 1}
                                             onClick={() => setSelectedScreenIndex(prev => prev + 1)}
                                             className="px-8 border-gray-200 font-bold"
                                         >
-                                            Next Screen
+                                            Next Booking
                                         </Button>
                                     </div>
                                 </div>
@@ -662,6 +801,7 @@ export function CampaignForm() {
                         </div>
                     </div>
                 );
+            }
             case 4:
                 return (
                     <Card className="max-w-3xl mx-auto">
@@ -679,26 +819,69 @@ export function CampaignForm() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {Object.entries(formData.hourlySegments).map(([screenId, segments]) => {
-                                        if (segments.length === 0) return null;
-                                        const screen = mockScreens.find(s => s.id === screenId);
-                                        const start = new Date(formData.startDate);
-                                        const end = new Date(formData.endDate);
+                                    {formData.bookings.map((booking) => {
+                                        if (booking.segments.length === 0) return null;
+
+                                        const start = new Date(booking.startDate || formData.startDate);
+                                        const end = new Date(booking.endDate || formData.endDate);
                                         const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
-                                        const selectedScreen = formData.screens.find(s => s.id === screenId);
-                                        const qty = selectedScreen?.bookedQuantity || 1;
-                                        const totalPrice = segments.length * 50 * diffDays * qty;
+                                        const qty = booking.quantity || 1;
+
+                                        // Contract check for UI
+                                        const activeContract = mockContracts.find(c =>
+                                            c.tenantName === formData.tenant &&
+                                            c.status === 'active' &&
+                                            new Date(formData.startDate) >= new Date(c.startDate) &&
+                                            new Date(formData.endDate) <= new Date(c.endDate)
+                                        );
+                                        const contractApplies = activeContract && (
+                                            activeContract.screenSubset === 'all' ||
+                                            (activeContract.screens && activeContract.screens.includes(booking.screenId))
+                                        );
+
+                                        let pricePerHour = 50;
+                                        let originalPrice = 50;
+
+                                        if (contractApplies && activeContract.pricingType === 'fixed') {
+                                            pricePerHour = activeContract.pricingValue;
+                                        } else {
+                                            const pricingRule = mockPricing.find(p => p.screenId === booking.screenId && p.slotTime?.startsWith(booking.segments[0]?.split(':')[0]));
+                                            originalPrice = pricingRule?.pricePerDay ? pricingRule.pricePerDay / 4 : 50;
+                                            pricePerHour = originalPrice;
+                                            if (contractApplies && activeContract.pricingType === 'discount') {
+                                                pricePerHour = originalPrice * (1 - (activeContract.pricingValue / 100));
+                                            }
+                                        }
+
+                                        const totalPrice = booking.segments.length * pricePerHour * diffDays * qty;
 
                                         return (
-                                            <TableRow key={screenId}>
+                                            <TableRow key={booking.id}>
                                                 <TableCell>
-                                                    <p className="font-medium">{screen?.name}</p>
-                                                    <p className="text-xs text-[hsl(var(--color-text-muted))]">{segments.length} segments selected</p>
+                                                    <p className="font-medium">{booking.screenName}</p>
+                                                    <p className="text-[10px] text-gray-500">
+                                                        {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                                                    </p>
+                                                    <p className="text-xs text-[hsl(var(--color-text-muted))]">{booking.segments.length} segments</p>
                                                 </TableCell>
                                                 <TableCell className="text-right font-medium">{qty}</TableCell>
-                                                <TableCell className="text-right">50 KWD</TableCell>
+                                                <TableCell className="text-right">
+                                                    {contractApplies ? (
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-xs line-through text-gray-400">{originalPrice} KWD</span>
+                                                            <span className="text-blue-600 font-bold">{pricePerHour} KWD</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span>{pricePerHour} KWD</span>
+                                                    )}
+                                                </TableCell>
                                                 <TableCell className="text-right font-semibold">
                                                     {formatCurrency(totalPrice)}
+                                                    {contractApplies && (
+                                                        <p className={`text-[10px] font-bold ${activeContract.pricingType === 'fixed' ? 'text-indigo-500' : 'text-blue-500'}`}>
+                                                            {activeContract.pricingType === 'fixed' ? 'Fixed Price' : `${activeContract.pricingValue}% Off`}
+                                                        </p>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         );
@@ -719,47 +902,59 @@ export function CampaignForm() {
                         </div>
                     </Card>
                 );
-            case 5:
-                const uploadScreen = formData.screens[selectedScreenIndex];
-                const screenMedia = formData.media.filter(m => m.screenId === uploadScreen?.id);
+            case 5: {
+                const uploadBooking = formData.bookings[selectedScreenIndex];
+                const bookingMedia = formData.media.filter(m => m.bookingId === uploadBooking?.id);
 
                 return (
                     <div className="max-w-[1100px] mx-auto">
                         <div className="mb-6">
                             <h2 className="text-3xl font-extrabold tracking-tight">Media Upload</h2>
                             <p className="text-sm text-[hsl(var(--color-text-muted))] mt-1 font-medium">
-                                Upload creative assets for each screen. You can add multiple assets per location.
+                                Upload creative assets for each booking. Each booking entry can have its own media.
                             </p>
                         </div>
 
                         <Card className="min-h-[500px] overflow-hidden">
                             <div className="flex h-full min-h-[500px]">
                                 {/* Sidebar */}
-                                <div className="w-[280px] border-r border-gray-100 bg-gray-50/30 p-4 space-y-2">
-                                    {formData.screens.map((screen, idx) => (
+                                <div className="w-[300px] border-r border-gray-100 bg-gray-50/30 p-4 space-y-2 overflow-y-auto">
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-2">Select Booking</h4>
+                                    {formData.bookings.map((booking, idx) => (
                                         <div
-                                            key={screen.id}
+                                            key={booking.id}
                                             onClick={() => setSelectedScreenIndex(idx)}
-                                            className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedScreenIndex === idx
-                                                ? 'bg-white border-gray-200 shadow-sm'
-                                                : 'border-transparent text-gray-400 hover:text-gray-600'
+                                            className={`p-3 rounded-xl cursor-pointer transition-all border ${selectedScreenIndex === idx
+                                                ? 'bg-white border-black shadow-sm'
+                                                : 'border-transparent text-gray-400 hover:bg-gray-50'
                                                 }`}
                                         >
-                                            <p className={`text-sm font-bold ${selectedScreenIndex === idx ? 'text-black' : ''}`}>
-                                                {screen.name}
+                                            <p className={`text-xs font-bold ${selectedScreenIndex === idx ? 'text-black' : ''} truncate`}>
+                                                {booking.screenName}
                                             </p>
+                                            <p className="text-[9px] mt-0.5">
+                                                {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                                            </p>
+                                            <div className="flex items-center gap-1 mt-1">
+                                                <Badge className="text-[8px] h-3.5 px-1 bg-gray-100 text-gray-500">
+                                                    {formData.media.filter(m => m.bookingId === booking.id).length} files
+                                                </Badge>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* Main Upload Area */}
+                                {/* Main Area */}
                                 <div className="flex-1 p-10 flex flex-col">
-                                    {uploadScreen && (
+                                    {uploadBooking && (
                                         <div className="space-y-8 flex-1">
                                             <div>
-                                                <h3 className="text-2xl font-bold">{uploadScreen.name}</h3>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <Badge variant="outline" className="bg-blue-50 text-blue-600 text-[10px]">Booking #{selectedScreenIndex + 1}</Badge>
+                                                    <h3 className="text-2xl font-bold">{uploadBooking.screenName}</h3>
+                                                </div>
                                                 <p className="text-sm text-gray-500 font-medium">
-                                                    Required: {uploadScreen.resolution?.width}×{uploadScreen.resolution?.height} • {uploadScreen.size?.width} inch
+                                                    Required: {uploadBooking.resolution?.width}×{uploadBooking.resolution?.height} • {uploadBooking.size?.width} m
                                                 </p>
                                             </div>
 
@@ -786,10 +981,10 @@ export function CampaignForm() {
                                                 />
                                             </div>
 
-                                            {/* Preview of current screen media */}
-                                            {screenMedia.length > 0 && (
+                                            {/* Preview of current booking media */}
+                                            {bookingMedia.length > 0 && (
                                                 <div className="grid grid-cols-3 gap-4 mt-6">
-                                                    {screenMedia.map((item, idx) => (
+                                                    {bookingMedia.map((item, idx) => (
                                                         <div key={idx} className="relative group rounded-lg overflow-hidden border bg-black aspect-video">
                                                             {item.type === 'video' ? (
                                                                 <video src={item.url} className="w-full h-full object-cover" muted />
@@ -797,19 +992,16 @@ export function CampaignForm() {
                                                                 <img src={item.url} className="w-full h-full object-cover" alt="" />
                                                             )}
                                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[1.5px]">
-                                                                {/* Close/Remove Button (X) */}
                                                                 <button
-                                                                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-all shadow-lg z-20 transform scale-90 group-hover:scale-100"
+                                                                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-all shadow-lg z-20"
                                                                     onClick={() => handleRemoveMedia(item.id)}
                                                                 >
                                                                     <X size={16} />
                                                                 </button>
-
-                                                                {/* Replace Action */}
                                                                 <div className="absolute inset-0 flex items-center justify-center">
                                                                     <Button
                                                                         size="sm"
-                                                                        className="bg-white text-black hover:bg-gray-100 font-bold px-4 py-2 rounded-lg flex items-center gap-2 transform scale-90 group-hover:scale-100 transition-all shadow-xl"
+                                                                        className="bg-white text-black hover:bg-gray-100 font-bold px-4 py-2 rounded-lg flex items-center gap-2"
                                                                         onClick={() => handleReplaceMedia(item.id)}
                                                                     >
                                                                         <Upload size={14} /> Replace
@@ -833,6 +1025,7 @@ export function CampaignForm() {
                         </Card>
                     </div>
                 );
+            }
             case 6:
                 return (
                     <div className="space-y-6 max-w-4xl mx-auto">
@@ -867,6 +1060,13 @@ export function CampaignForm() {
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
+                                            <Users className="text-blue-600 mt-1" size={20} />
+                                            <div>
+                                                <p className="text-sm text-[hsl(var(--color-text-muted))]">Total Impressions</p>
+                                                <p className="font-bold text-xl">{calculateImpressions.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
                                             <DollarSign className="text-[hsl(var(--color-text-muted))] mt-1" size={20} />
                                             <div>
                                                 <p className="text-sm text-[hsl(var(--color-text-muted))]">Estimated Price</p>
@@ -877,26 +1077,54 @@ export function CampaignForm() {
                                 </div>
 
                                 <div className="pt-6 border-t">
-                                    <p className="text-sm font-bold mb-4">Selected Screens & Segments</p>
+                                    <p className="text-sm font-bold mb-4">Bookings Summary</p>
                                     <div className="space-y-3">
-                                        {formData.screens.map(screen => (
-                                            <div key={screen.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="font-medium text-sm">{screen.name}</p>
+                                        {formData.bookings.map((booking, idx) => (
+                                            <div key={booking.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Booking #{idx + 1}</span>
+                                                            <p className="font-bold text-sm">{booking.screenName}</p>
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-500 font-medium">
+                                                            {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
                                                         <Badge variant="secondary" className="text-[10px] bg-blue-50 text-blue-600 border-blue-100">
-                                                            Qty: {screen.bookedQuantity}
+                                                            Qty: {booking.quantity || 1}
                                                         </Badge>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                        {formData.hourlySegments[screen.id]?.map(segment => (
-                                                            <Badge key={segment} variant="outline" className="text-[9px] bg-white">
-                                                                {segment}
-                                                            </Badge>
-                                                        ))}
+                                                </div>
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {booking.segments?.map(segment => (
+                                                        <Badge key={segment} variant="outline" className="text-[9px] bg-white text-gray-600">
+                                                            {segment}
+                                                        </Badge>
+                                                    ))}
+                                                    {(booking.segments?.length === 0 || !booking.segments) && <span className="text-[10px] text-red-400 italic">No segments selected</span>}
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-6">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Users size={12} className="text-blue-500" />
+                                                        <span className="text-[10px] text-gray-500 font-bold">
+                                                            {(() => {
+                                                                const scr = mockScreens.find(s => s.id === booking.screenId);
+                                                                if (!scr) return '0';
+                                                                const days = Math.ceil(Math.abs(new Date(booking.endDate) - new Date(booking.startDate)) / (1000 * 60 * 60 * 24)) + 1;
+                                                                const segs = booking.segments?.length || 0;
+                                                                return Math.round((scr.imp2Weeks / 14 / 24) * days * segs * (booking.quantity || 1)).toLocaleString();
+                                                            })()} Impressions
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <FileText size={12} className="text-gray-400" />
+                                                        <span className="text-[10px] text-gray-500">
+                                                            {formData.media.filter(m => m.bookingId === booking.id).length} assets
+                                                        </span>
                                                     </div>
                                                 </div>
-                                                <p className="text-[10px] text-gray-400">{screen.location}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -984,8 +1212,8 @@ export function CampaignForm() {
                             onClick={handleNext}
                             disabled={
                                 (currentStep === 1 && (!formData.name || !formData.tenant)) ||
-                                (currentStep === 2 && formData.screens.length === 0) ||
-                                (currentStep === 3 && Object.keys(formData.hourlySegments).length === 0)
+                                (currentStep === 2 && formData.bookings.length === 0) ||
+                                (currentStep === 3 && (formData.bookings.length === 0 || formData.bookings.some(b => b.segments.length === 0)))
                             }
                         >
                             {currentStep === 3 ? 'Calculate Pricing' : currentStep === 5 ? 'Review Campaign' : 'Next Step'} <ChevronRight size={18} className="ml-2" />

@@ -24,6 +24,8 @@ import { ReportList } from './pages/Reports/ReportList';
 import { CampaignReport } from './pages/Reports/CampaignReport';
 import { UserReport } from './pages/Reports/UserReport';
 import { ScreenReport } from './pages/Reports/ScreenReport';
+import { ContractList } from './pages/Contracts/ContractList';
+import { ContractForm } from './pages/Contracts/ContractForm';
 
 // Placeholder pages for valid routing
 const Placeholder = ({ title }) => <h1 className="text-2xl font-bold">{title} Page</h1>;
@@ -60,6 +62,9 @@ function App() {
                 <Route path="/reports/campaign/:id" element={<CampaignReport />} />
                 <Route path="/reports/users" element={<UserReport />} />
                 <Route path="/reports/screens" element={<ScreenReport />} />
+                <Route path="/contracts" element={<ContractList />} />
+                <Route path="/contracts/new" element={<ContractForm />} />
+                <Route path="/contracts/:id" element={<ContractForm />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

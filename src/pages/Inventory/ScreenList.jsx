@@ -116,7 +116,7 @@ export function ScreenList() {
                             <TableHead>Location</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead>Category</TableHead>
-                            <TableHead>Size (ft)</TableHead>
+                            <TableHead>Size (m)</TableHead>
                             <TableHead>Resolution</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>

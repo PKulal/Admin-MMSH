@@ -201,6 +201,14 @@ export function ScreenForm() {
                                                 IMP
                                             </span>
                                         </div>
+                                        <div className="mt-2 flex gap-4">
+                                            <div className="text-[10px] font-bold text-blue-600 uppercase">
+                                                Daily: {Math.round(formData.imp2Weeks / 14).toLocaleString()}
+                                            </div>
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase">
+                                                Hourly: {Math.round(formData.imp2Weeks / 14 / 24).toLocaleString()}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -240,7 +248,7 @@ export function ScreenForm() {
 
                                 <div>
                                     <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
-                                        Size (feet) *
+                                        Size (meters) *
                                     </label>
                                     <div className="grid grid-cols-2 gap-4">
                                         <Input
