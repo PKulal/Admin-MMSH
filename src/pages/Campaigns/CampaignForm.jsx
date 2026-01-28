@@ -1204,7 +1204,7 @@ export function CampaignForm() {
                             className="bg-black text-white hover:bg-gray-800 rounded-lg px-8 font-bold"
                             onClick={handleSubmit}
                         >
-                            Launch Campaign
+                            Accept Campaign
                         </Button>
                     ) : (
                         <Button

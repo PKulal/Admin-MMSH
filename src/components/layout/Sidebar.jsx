@@ -13,7 +13,8 @@ import {
     Menu,
     X,
     BarChart3,
-    FileText
+    FileText,
+    ClipboardList
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
@@ -47,6 +48,7 @@ export function Sidebar() {
         { icon: Megaphone, label: "Campaigns", path: "/campaigns" },
         { icon: Monitor, label: "Inventory", path: "/inventory" },
         { icon: FileText, label: "Contracts", path: "/contracts" }, // Added Contracts
+        { icon: ClipboardList, label: "Quotations", path: "/quotations" },
         { icon: CalendarClock, label: "Slots", path: "/slots" },
         { icon: DollarSign, label: "Pricing", path: "/pricing" },
         { icon: Calendar, label: "Events", path: "/events" },

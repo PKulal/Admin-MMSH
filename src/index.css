@@ -4,16 +4,25 @@
 
 @layer base {
   :root {
-    --color-primary: 0 0% 0%;        /* #000000 */
-    --color-bg: 0 0% 98%;             /* #FAFAFA */
-    --color-card: 0 0% 100%;          /* #FFFFFF */
-    --color-text-main: 0 0% 9%;       /* #171717 */
-    --color-text-muted: 0 0% 40%;     /* #666666 */
-    --color-border: 0 0% 90%;         /* #E5E5E5 */
+    --color-primary: 0 0% 0%;
+    /* #000000 */
+    --color-bg: 0 0% 98%;
+    /* #FAFAFA */
+    --color-card: 0 0% 100%;
+    /* #FFFFFF */
+    --color-text-main: 0 0% 9%;
+    /* #171717 */
+    --color-text-muted: 0 0% 40%;
+    /* #666666 */
+    --color-border: 0 0% 90%;
+    /* #E5E5E5 */
 
-    --status-success: 142 76% 36%;    /* Completed */
-    --status-warning: 24 90% 55%;     /* Submitted */
-    --status-running: 217 91% 60%;    /* Running */
+    --status-success: 142 76% 36%;
+    /* Completed */
+    --status-warning: 24 90% 55%;
+    /* Submitted */
+    --status-running: 217 91% 60%;
+    /* Running */
   }
 
   body {
@@ -32,10 +41,41 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     border-radius: 12px;
   }
-  
+
   .glass-panel {
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(8px);
     border-right: 1px solid rgba(255, 255, 255, 0.4);
+  }
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+
+  aside,
+  .md\:ml-20,
+  .lg\:ml-64,
+  button,
+  .no-scrollbar {
+    display: none !important;
+  }
+
+  main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .glass-card {
+    background: white !important;
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+    backdrop-filter: none !important;
+  }
+
+  .divide-white\/10>* {
+    border-color: #eee !important;
   }
 }

@@ -26,8 +26,11 @@ export function PricingForm() {
             peakDays: 'all',
             peakHour: 'all',
             imp2Weeks: '',
-            calcRate4Week: '',
+            calcRate3Day: '',
+            calcRate1Week: '',
             calcRate2Week: '',
+            calcRate3Week: '',
+            calcRate4Week: '',
             sellingRate: '',
             oneDayRate: '',
             weekDayRate: '',
@@ -116,7 +119,7 @@ export function PricingForm() {
             peakRateHour: (basePrice / 24) * 1.4,
             offPeakRateHour: (basePrice / 24) * 0.7,
         }));
-    }, [selectedScreen, formData.sellingRate, formData.calcRate4Week, formData.calcRate2Week]);
+    }, [selectedScreen, formData.sellingRate, formData.calcRate4Week, formData.calcRate2Week, formData.calcRate3Day, formData.calcRate1Week, formData.calcRate3Week]);
 
     return (
         <div className="space-y-6">
@@ -198,10 +201,17 @@ export function PricingForm() {
                             </CardHeader>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-medium text-[hsl(var(--color-text-muted))]">Calc. Rate-4Week</label>
+                                    <label className="text-xs font-medium text-[hsl(var(--color-text-muted))]">Calc. Rate-3Days</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[hsl(var(--color-text-muted))]">KWD</span>
-                                        <Input type="number" value={formData.calcRate4Week} onChange={(e) => updateField('calcRate4Week', e.target.value)} className="pl-12 text-sm" />
+                                        <Input type="number" value={formData.calcRate3Day} onChange={(e) => updateField('calcRate3Day', e.target.value)} className="pl-12 text-sm" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-[hsl(var(--color-text-muted))]">Calc. Rate-1Week</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[hsl(var(--color-text-muted))]">KWD</span>
+                                        <Input type="number" value={formData.calcRate1Week} onChange={(e) => updateField('calcRate1Week', e.target.value)} className="pl-12 text-sm" />
                                     </div>
                                 </div>
                                 <div className="space-y-1">
@@ -209,6 +219,20 @@ export function PricingForm() {
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[hsl(var(--color-text-muted))]">KWD</span>
                                         <Input type="number" value={formData.calcRate2Week} onChange={(e) => updateField('calcRate2Week', e.target.value)} className="pl-12 text-sm" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-[hsl(var(--color-text-muted))]">Calc. Rate-3Weeks</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[hsl(var(--color-text-muted))]">KWD</span>
+                                        <Input type="number" value={formData.calcRate3Week} onChange={(e) => updateField('calcRate3Week', e.target.value)} className="pl-12 text-sm" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-[hsl(var(--color-text-muted))]">Calc. Rate-4Week</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[hsl(var(--color-text-muted))]">KWD</span>
+                                        <Input type="number" value={formData.calcRate4Week} onChange={(e) => updateField('calcRate4Week', e.target.value)} className="pl-12 text-sm" />
                                     </div>
                                 </div>
                                 <div className="space-y-1">
