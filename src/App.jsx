@@ -19,6 +19,7 @@ import { TenantManagement } from './pages/Tenants/TenantManagement';
 import { TenantForm } from './pages/Tenants/TenantForm';
 import { UserManagement } from './pages/Users/UserManagement';
 import { UserForm } from './pages/Users/UserForm';
+import { AgencyForm } from './pages/Users/AgencyForm';
 import { CampaignForm } from './pages/Campaigns/CampaignForm';
 import { ReportList } from './pages/Reports/ReportList';
 import { CampaignReport } from './pages/Reports/CampaignReport';
@@ -60,6 +61,7 @@ function App() {
                 <Route path="/tenants/:id" element={<TenantForm />} />
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/users/:id" element={<UserForm />} />
+                <Route path="/agencies/:id" element={<AgencyForm />} />
                 <Route path="/reports" element={<ReportList />} />
                 <Route path="/reports/campaign/:id" element={<CampaignReport />} />
                 <Route path="/reports/users" element={<UserReport />} />

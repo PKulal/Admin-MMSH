@@ -30,7 +30,10 @@ import {
     Moon,
     Zap,
     Plus,
-    Users
+    Users,
+    Download,
+    FileCheck,
+    AlertCircle
 } from 'lucide-react';
 import { mockCampaigns, mockTenants, mockScreens } from '../../data/mockData';
 import { mockPricing } from '../../data/mockPricing';
@@ -42,7 +45,8 @@ const STEPS = [
     { id: 3, title: 'Scheduling', icon: Clock },
     { id: 4, title: 'Pricing', icon: DollarSign },
     { id: 5, title: 'Media', icon: FileText },
-    { id: 6, title: 'Review', icon: CheckCircle2 }
+    { id: 6, title: 'Quotation', icon: FileText },
+    { id: 7, title: 'Review & Approval', icon: CheckCircle2 }
 ];
 
 const HOURLY_SEGMENTS = Array.from({ length: 24 }, (_, i) => {
@@ -97,7 +101,10 @@ export function CampaignForm() {
         })) || [],
         estimatedPrice: existingCampaign?.estimatedPrice || 0,
         status: existingCampaign?.status || 'booked',
-        media: existingCampaign?.media || []
+        media: existingCampaign?.media || [],
+        quotationGenerated: false,
+        quotationId: existingCampaign?.quotationId || '',
+        approvalStatus: existingCampaign?.status === 'active' ? 'approved' : 'pending'
     });
 
     const updateField = (field, value) => {
@@ -324,7 +331,7 @@ export function CampaignForm() {
     }, [currentStep, calculatePrice]);
 
     const handleNext = () => {
-        if (currentStep < 6) setCurrentStep(prev => prev + 1);
+        if (currentStep < 7) setCurrentStep(prev => prev + 1);
     };
 
     const handleBack = () => {
@@ -1028,115 +1035,241 @@ export function CampaignForm() {
             }
             case 6:
                 return (
-                    <div className="space-y-6 max-w-4xl mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Campaign Summary</CardTitle>
-                            </CardHeader>
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-4">
-                                        <div className="flex items-start gap-3">
-                                            <Info className="text-[hsl(var(--color-text-muted))] mt-1" size={20} />
-                                            <div>
-                                                <p className="text-sm text-[hsl(var(--color-text-muted))]">Campaign Name</p>
-                                                <p className="font-bold text-lg">{formData.name}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-3">
-                                            <Building2 className="text-[hsl(var(--color-text-muted))] mt-1" size={20} />
-                                            <div>
-                                                <p className="text-sm text-[hsl(var(--color-text-muted))]">Tenant</p>
-                                                <p className="font-semibold">{formData.tenant}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div className="flex items-start gap-3">
-                                            <Calendar className="text-[hsl(var(--color-text-muted))] mt-1" size={20} />
-                                            <div>
-                                                <p className="text-sm text-[hsl(var(--color-text-muted))]">Duration</p>
-                                                <p className="font-semibold">{formData.startDate} to {formData.endDate}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-3">
-                                            <Users className="text-blue-600 mt-1" size={20} />
-                                            <div>
-                                                <p className="text-sm text-[hsl(var(--color-text-muted))]">Total Impressions</p>
-                                                <p className="font-bold text-xl">{calculateImpressions.toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-3">
-                                            <DollarSign className="text-[hsl(var(--color-text-muted))] mt-1" size={20} />
-                                            <div>
-                                                <p className="text-sm text-[hsl(var(--color-text-muted))]">Estimated Price</p>
-                                                <p className="font-bold text-xl text-[hsl(var(--color-primary))]">{formatCurrency(formData.estimatedPrice)}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="pt-6 border-t">
-                                    <p className="text-sm font-bold mb-4">Bookings Summary</p>
-                                    <div className="space-y-3">
-                                        {formData.bookings.map((booking, idx) => (
-                                            <div key={booking.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Booking #{idx + 1}</span>
-                                                            <p className="font-bold text-sm">{booking.screenName}</p>
-                                                        </div>
-                                                        <p className="text-[10px] text-gray-500 font-medium">
-                                                            {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <Badge variant="secondary" className="text-[10px] bg-blue-50 text-blue-600 border-blue-100">
-                                                            Qty: {booking.quantity || 1}
-                                                        </Badge>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-1 mt-2">
-                                                    {booking.segments?.map(segment => (
-                                                        <Badge key={segment} variant="outline" className="text-[9px] bg-white text-gray-600">
-                                                            {segment}
-                                                        </Badge>
-                                                    ))}
-                                                    {(booking.segments?.length === 0 || !booking.segments) && <span className="text-[10px] text-red-400 italic">No segments selected</span>}
-                                                </div>
-                                                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-6">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Users size={12} className="text-blue-500" />
-                                                        <span className="text-[10px] text-gray-500 font-bold">
-                                                            {(() => {
-                                                                const scr = mockScreens.find(s => s.id === booking.screenId);
-                                                                if (!scr) return '0';
-                                                                const days = Math.ceil(Math.abs(new Date(booking.endDate) - new Date(booking.startDate)) / (1000 * 60 * 60 * 24)) + 1;
-                                                                const segs = booking.segments?.length || 0;
-                                                                return Math.round((scr.imp2Weeks / 14 / 24) * days * segs * (booking.quantity || 1)).toLocaleString();
-                                                            })()} Impressions
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <FileText size={12} className="text-gray-400" />
-                                                        <span className="text-[10px] text-gray-500">
-                                                            {formData.media.filter(m => m.bookingId === booking.id).length} assets
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        <div className="flex justify-between items-end">
+                            <div>
+                                <h1 className="text-3xl font-bold">Generate Quotation</h1>
+                                <p className="text-[hsl(var(--color-text-muted))]">Review pricing and generate a formal quotation for the tenant.</p>
                             </div>
-                        </Card>
+                            {!formData.quotationGenerated ? (
+                                <Button
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    onClick={() => {
+                                        updateField('quotationGenerated', true);
+                                        updateField('quotationId', `QUO-2026-${Math.floor(Math.random() * 9000) + 1000}`);
+                                    }}
+                                >
+                                    <FileText size={18} className="mr-2" /> Generate Quotation
+                                </Button>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <Button variant="outline" className="text-blue-600 border-blue-200">
+                                        <Download size={18} className="mr-2" /> Download PDF
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => updateField('quotationGenerated', false)}
+                                        className="text-gray-400"
+                                    >
+                                        Regenerate
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
 
-                        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex gap-3 items-start">
-                            <Info className="text-blue-600 mt-0.5" size={20} />
-                            <p className="text-sm text-blue-800">
-                                Review all the details carefully. Once submitted, the campaign will be booked and prepared for airing according to the configured schedule.
-                            </p>
+                        {formData.quotationGenerated ? (
+                            <Card className="border-2 border-blue-100 bg-white">
+                                <div className="p-8 space-y-8">
+                                    <div className="flex justify-between items-start border-b pb-6">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold">M</div>
+                                                <span className="font-bold text-xl tracking-tight">MMSH ADMIN</span>
+                                            </div>
+                                            <p className="text-sm text-gray-500">Quotation #: {formData.quotationId}</p>
+                                            <p className="text-sm text-gray-500">Date: {new Date().toLocaleDateString()}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <Badge className="bg-blue-50 text-blue-600 border-blue-100 mb-2">QUOTATION</Badge>
+                                            <p className="text-sm font-bold">{formData.tenant}</p>
+                                            <p className="text-xs text-gray-500">Campaign: {formData.name}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow className="bg-gray-50/50">
+                                                    <TableHead>Description</TableHead>
+                                                    <TableHead className="text-right">Qty/Days</TableHead>
+                                                    <TableHead className="text-right">Rate</TableHead>
+                                                    <TableHead className="text-right">Amount</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {formData.bookings.map((booking, idx) => {
+                                                    const start = new Date(booking.startDate || formData.startDate);
+                                                    const end = new Date(booking.endDate || formData.endDate);
+                                                    const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
+                                                    const segs = booking.segments?.length || 0;
+
+                                                    return (
+                                                        <TableRow key={idx}>
+                                                            <TableCell>
+                                                                <p className="font-medium">{booking.screenName}</p>
+                                                                <p className="text-[10px] text-gray-400 uppercase">{booking.location}</p>
+                                                                <p className="text-[10px] text-blue-600 font-medium">{segs} segments per day</p>
+                                                            </TableCell>
+                                                            <TableCell className="text-right">{diffDays} days</TableCell>
+                                                            <TableCell className="text-right">{(formData.estimatedPrice / diffDays / (booking.quantity || 1)).toFixed(2)} KWD</TableCell>
+                                                            <TableCell className="text-right font-medium">
+                                                                {formatCurrency((formData.estimatedPrice / formData.bookings.length))}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+
+                                    <div className="flex justify-end pt-6">
+                                        <div className="w-[250px] space-y-3">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-500">Subtotal</span>
+                                                <span className="font-medium">{formatCurrency(formData.estimatedPrice)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-500">VAT (0%)</span>
+                                                <span className="font-medium">0.000 KWD</span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-3 border-t">
+                                                <span className="font-bold">Total Amount</span>
+                                                <span className="text-2xl font-black text-blue-600">{formatCurrency(formData.estimatedPrice)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-50 p-4 rounded-xl text-[10px] text-gray-400 leading-relaxed italic">
+                                        Note: This quotation is valid for 7 days. Prices include all applicable local fees but exclude special production costs if not specified above.
+                                    </div>
+                                </div>
+                            </Card>
+                        ) : (
+                            <Card className="border-dashed border-2 flex flex-col items-center justify-center py-20 text-center space-y-4">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                                    <FileText size={32} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg">No Quotation Generated</h3>
+                                    <p className="text-sm text-gray-500 max-w-xs mx-auto">
+                                        Click the button above to generate a formal PDF quotation for this campaign.
+                                    </p>
+                                </div>
+                            </Card>
+                        )}
+                    </div>
+                );
+            case 7:
+                return (
+                    <div className="max-w-4xl mx-auto space-y-8">
+                        <div className="text-center space-y-2">
+                            <h1 className="text-3xl font-bold">Review & Internal Approval</h1>
+                            <p className="text-[hsl(var(--color-text-muted))] underline decoration-blue-500/30">Final verification of all campaign parameters before official scheduling.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2 space-y-6">
+                                {/* Campaign Health Card */}
+                                <Card className="bg-green-50/30 border-green-100">
+                                    <div className="flex items-start gap-4 p-2">
+                                        <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                                            <FileCheck size={24} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-green-900">Compliance & Availability Check</h4>
+                                            <p className="text-sm text-green-700 mt-1">
+                                                All selected screens have available slots for the chosen dates. Creative assets match screen resolutions.
+                                            </p>
+                                            <div className="mt-4 grid grid-cols-2 gap-3">
+                                                <div className="flex items-center gap-2 text-[10px] font-bold text-green-600 uppercase">
+                                                    <CheckCircle2 size={12} /> Slots Guaranteed
+                                                </div>
+                                                <div className="flex items-center gap-2 text-[10px] font-bold text-green-600 uppercase">
+                                                    <CheckCircle2 size={12} /> Media Verified
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Card>
+
+                                {/* Summary Block */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Card className="p-5">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Impressions</p>
+                                        <p className="text-2xl font-black">{calculateImpressions.toLocaleString()}</p>
+                                        <div className="mt-2 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-600 w-[70%]" />
+                                        </div>
+                                    </Card>
+                                    <Card className="p-5">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Final Budget</p>
+                                        <p className="text-2xl font-black text-blue-600">{formatCurrency(formData.estimatedPrice)}</p>
+                                        <p className="text-[10px] text-gray-400 mt-1">Pre-VAT Estimate</p>
+                                    </Card>
+                                </div>
+
+                                {/* Detailed Summary from case 6 (old) */}
+                                <Card>
+                                    <div className="space-y-4">
+                                        <h4 className="font-bold text-sm border-b pb-2">Technical Summary</h4>
+                                        <div className="space-y-3">
+                                            {formData.bookings.map((booking, idx) => (
+                                                <div key={idx} className="flex justify-between items-center text-sm py-1 border-b border-gray-50 last:border-0 font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline" className="h-5 px-1.5 text-[8px]">{idx + 1}</Badge>
+                                                        <span>{booking.screenName}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 text-gray-500">
+                                                        <span>{booking.segments?.length} segments</span>
+                                                        <span className="w-20 text-right">{formatCurrency(formData.estimatedPrice / formData.bookings.length)}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </Card>
+                            </div>
+
+                            <div className="space-y-6">
+                                <Card className="shadow-lg border-2 border-primary/5">
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h4 className="font-bold text-sm">Approval Chain</h4>
+                                            <p className="text-xs text-gray-500">Requires Ops or Sales head sign-off</p>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs ring-2 ring-blue-100">SA</div>
+                                                <div>
+                                                    <p className="text-xs font-bold leading-none">System Admin</p>
+                                                    <p className="text-[10px] text-green-600 font-bold mt-1 uppercase flex items-center gap-1">
+                                                        <CheckCircle2 size={10} /> Validate in process
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {/* <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-xs">AM</div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-gray-400 leading-none italic">Approving Manager</p>
+                                                    <p className="text-[10px] text-amber-500 font-bold mt-1 uppercase flex items-center gap-1">
+                                                        <Clock size={10} /> Pending Approval
+                                                    </p>
+                                                </div>
+                                            </div> */}
+                                        </div>
+
+                                        <div className="pt-4 border-t space-y-3">
+                                            <div className="flex items-start gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-100 italic">
+                                                <AlertCircle size={14} className="mt-0.5" />
+                                                <p className="text-[10px] font-medium leading-normal">
+                                                    Approving this will lock the campaign booking and notify the tenant's admin team via email.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Card>
+                            </div>
                         </div>
                     </div>
                 );
@@ -1199,13 +1332,25 @@ export function CampaignForm() {
                         <ChevronLeft size={18} className="mr-2" /> Back
                     </Button>
 
-                    {currentStep === 6 ? (
-                        <Button
-                            className="bg-black text-white hover:bg-gray-800 rounded-lg px-8 font-bold"
-                            onClick={handleSubmit}
-                        >
-                            Accept Campaign
-                        </Button>
+                    {currentStep === 7 ? (
+                        <div className="flex gap-4">
+                            <Button
+                                variant="outline"
+                                className="border-red-200 text-red-600 hover:bg-red-50 rounded-lg px-8 font-bold"
+                                onClick={() => {
+                                    alert('Campaign Rejected');
+                                    navigate('/campaigns');
+                                }}
+                            >
+                                Reject
+                            </Button>
+                            <Button
+                                className="bg-green-600 text-white hover:bg-green-700 rounded-lg px-8 font-bold"
+                                onClick={handleSubmit}
+                            >
+                                Approve & Finalize
+                            </Button>
+                        </div>
                     ) : (
                         <Button
                             className="bg-black text-white hover:bg-gray-800 rounded-lg px-8 font-bold"
@@ -1213,14 +1358,19 @@ export function CampaignForm() {
                             disabled={
                                 (currentStep === 1 && (!formData.name || !formData.tenant)) ||
                                 (currentStep === 2 && formData.bookings.length === 0) ||
-                                (currentStep === 3 && (formData.bookings.length === 0 || formData.bookings.some(b => b.segments.length === 0)))
+                                (currentStep === 3 && (formData.bookings.length === 0 || formData.bookings.some(b => b.segments.length === 0))) ||
+                                (currentStep === 6 && !formData.quotationGenerated)
                             }
                         >
-                            {currentStep === 3 ? 'Calculate Pricing' : currentStep === 5 ? 'Review Campaign' : 'Next Step'} <ChevronRight size={18} className="ml-2" />
+                            {currentStep === 3 ? 'Calculate Pricing' :
+                                currentStep === 5 ? 'Generate Quotation' :
+                                    currentStep === 6 ? 'Final Review' : 'Next Step'} <ChevronRight size={18} className="ml-2" />
                         </Button>
                     )}
                 </div>
             </div>
         </div>
     );
-}
+};
+
+export default CampaignForm;

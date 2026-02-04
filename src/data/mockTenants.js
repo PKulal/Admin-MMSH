@@ -70,80 +70,77 @@ export const mockUsers = [
         lastLogin: '2026-01-04'
     },
     {
-        id: 'USR-002',
-        name: 'Layla Hassan',
-        email: 'layla@retailgiant.com',
-        tenantId: 'TEN-001',
-        tenantName: 'RetailGiant',
-        role: 'User',
-        active: true,
-        createdAt: '2025-01-20',
-        lastLogin: '2026-01-03'
-    },
-    {
-        id: 'USR-003',
-        name: 'Khalid Ibrahim',
-        email: 'khalid@retailgiant.com',
-        tenantId: 'TEN-001',
-        tenantName: 'RetailGiant',
-        role: 'User',
-        active: true,
-        createdAt: '2025-02-01',
-        lastLogin: '2026-01-02'
-    },
-    {
-        id: 'USR-004',
-        name: 'Sara Al-Hashemi',
-        email: 'sara@innotech.ae',
-        tenantId: 'TEN-002',
-        tenantName: 'InnoTech',
+        id: 'USR-SYS-001',
+        name: 'System Admin',
+        email: 'admin@mmsh.com',
         role: 'Admin',
         active: true,
-        createdAt: '2025-02-20',
-        lastLogin: '2026-01-04'
+        createdAt: '2025-01-01',
+        lastLogin: '2026-02-04',
+        isSystemUser: true
     },
     {
-        id: 'USR-005',
-        name: 'Yusuf Rahman',
-        email: 'yusuf@innotech.ae',
-        tenantId: 'TEN-002',
-        tenantName: 'InnoTech',
-        role: 'User',
+        id: 'USR-SYS-002',
+        name: 'Ops Manager',
+        email: 'ops@mmsh.com',
+        role: 'Ops',
         active: true,
-        createdAt: '2025-03-01',
-        lastLogin: '2026-01-01'
+        createdAt: '2025-01-01',
+        lastLogin: '2026-02-03',
+        isSystemUser: true
     },
     {
-        id: 'USR-006',
-        name: 'Mohammed Al-Thani',
-        email: 'mohammed@bevco.qa',
-        tenantId: 'TEN-003',
-        tenantName: 'BevCo',
-        role: 'Admin',
+        id: 'USR-SYS-003',
+        name: 'Sales Lead',
+        email: 'sales@mmsh.com',
+        role: 'Sales team',
         active: true,
-        createdAt: '2025-03-10',
-        lastLogin: '2026-01-03'
+        createdAt: '2025-01-05',
+        lastLogin: '2026-02-02',
+        isSystemUser: true
     },
     {
-        id: 'USR-007',
-        name: 'Fatima Al-Saud',
-        email: 'fatima@fashionhub.sa',
-        tenantId: 'TEN-004',
-        tenantName: 'FashionHub',
-        role: 'Admin',
+        id: 'USR-SYS-004',
+        name: 'Finance Approver',
+        email: 'approver@mmsh.com',
+        role: 'Approver',
         active: true,
-        createdAt: '2025-04-05',
-        lastLogin: '2026-01-04'
-    },
-    {
-        id: 'USR-008',
-        name: 'Noor Al-Fahad',
-        email: 'noor@fashionhub.sa',
-        tenantId: 'TEN-004',
-        tenantName: 'FashionHub',
-        role: 'User',
-        active: false,
-        createdAt: '2025-04-10',
-        lastLogin: '2025-12-15'
+        createdAt: '2025-01-10',
+        lastLogin: '2026-02-01',
+        isSystemUser: true
     }
 ];
+
+export const mockAgencies = [
+    {
+        id: 'AGN-001',
+        name: 'Al-Mansour Media',
+        contactName: 'Fahad Al-Mansour',
+        email: 'contact@almansour.com',
+        phone: '+965 1234 5678',
+        active: true,
+        commission: 15,
+        totalCampaigns: 12
+    },
+    {
+        id: 'AGN-002',
+        name: 'Global Ads Agency',
+        contactName: 'Jane Smith',
+        email: 'info@globalads.com',
+        phone: '+971 50 123 4567',
+        active: true,
+        commission: 10,
+        totalCampaigns: 8
+    },
+    {
+        id: 'AGN-003',
+        name: 'Desert Promotions',
+        contactName: 'Omar Hassan',
+        email: 'omar@desertpromo.com',
+        phone: '+974 3333 4444',
+        active: false,
+        commission: 12,
+        totalCampaigns: 3
+    }
+];
+

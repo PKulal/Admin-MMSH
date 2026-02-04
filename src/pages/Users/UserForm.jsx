@@ -19,7 +19,8 @@ export function UserForm() {
         email: '',
         tenantId: '',
         role: 'User',
-        active: true
+        active: true,
+        isSystemUser: false
     });
 
     const handleSubmit = (e) => {
@@ -86,28 +87,30 @@ export function UserForm() {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
-                                        Assign to Tenant *
-                                    </label>
-                                    <Select
-                                        required
-                                        value={formData.tenantId}
-                                        onChange={(e) => updateField('tenantId', e.target.value)}
-                                    >
-                                        <option value="">Select a tenant</option>
-                                        {mockTenantsDetailed.filter(t => t.active).map(tenant => (
-                                            <option key={tenant.id} value={tenant.id}>
-                                                {tenant.name}
-                                            </option>
-                                        ))}
-                                    </Select>
-                                    {selectedTenant && (
-                                        <p className="text-sm text-[hsl(var(--color-text-muted))] mt-1">
-                                            Contact: {selectedTenant.contactName} • {selectedTenant.email}
-                                        </p>
-                                    )}
-                                </div>
+                                {!formData.isSystemUser && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
+                                            Assign to Tenant *
+                                        </label>
+                                        <Select
+                                            required
+                                            value={formData.tenantId}
+                                            onChange={(e) => updateField('tenantId', e.target.value)}
+                                        >
+                                            <option value="">Select a tenant</option>
+                                            {mockTenantsDetailed.filter(t => t.active).map(tenant => (
+                                                <option key={tenant.id} value={tenant.id}>
+                                                    {tenant.name}
+                                                </option>
+                                            ))}
+                                        </Select>
+                                        {selectedTenant && (
+                                            <p className="text-sm text-[hsl(var(--color-text-muted))] mt-1">
+                                                Contact: {selectedTenant.contactName} • {selectedTenant.email}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-sm font-medium mb-2 text-[hsl(var(--color-text-main))]">
@@ -115,11 +118,15 @@ export function UserForm() {
                                     </label>
                                     <Select
                                         required
+                                        disabled={formData.isSystemUser}
                                         value={formData.role}
                                         onChange={(e) => updateField('role', e.target.value)}
                                     >
-                                        <option value="User">User</option>
                                         <option value="Admin">Admin</option>
+                                        <option value="Ops">Ops</option>
+                                        <option value="Sales team">Sales team</option>
+                                        <option value="Approver">Approver</option>
+                                        <option value="User">User</option>
                                     </Select>
                                     <p className="text-sm text-[hsl(var(--color-text-muted))] mt-1">
                                         {formData.role === 'Admin'
